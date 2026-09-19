@@ -23,6 +23,12 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Nuestro Viaje",
   description: "Itinerario y planes en pareja",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Nuestro Viaje",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
