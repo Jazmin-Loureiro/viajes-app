@@ -17,12 +17,28 @@ export interface MoveToDayModalProps {
 }
 
 const BLOQUES: { id: BloqueHorario; label: string; icon: string }[] = [
+  { id: "todo_el_dia", label: "Todo el día", icon: "☀️" },
   { id: "mañana", label: "Mañana", icon: "☀️" },
   { id: "mediodia", label: "Mediodía", icon: "🍽️" },
   { id: "tarde", label: "Tarde", icon: "🌤️" },
   { id: "cena", label: "Cena", icon: "🍷" },
   { id: "noche", label: "Noche", icon: "🌙" },
 ];
+
+const HORAS_DISPONIBLES: { value: string; label: string }[] = (() => {
+  const options: { value: string; label: string }[] = [
+    { value: "", label: "Sin hora fija" },
+  ];
+  for (let hour = 8; hour <= 23; hour++) {
+    for (const min of [0, 30]) {
+      const hStr = String(hour).padStart(2, "0");
+      const mStr = String(min).padStart(2, "0");
+      const timeStr = `${hStr}:${mStr} hs`;
+      options.push({ value: timeStr, label: timeStr });
+    }
+  }
+  return options;
+})();
 
 const getTodayString = () => {
   const d = new Date();
@@ -47,7 +63,14 @@ export default function MoveToDayModal({
     if (plan && isOpen) {
       setFecha(plan.fecha || getTodayString());
       setBloque(plan.bloque || "mañana");
-      setHorario(plan.horario || "");
+      let initialHorario = plan.horario || "";
+      if (initialHorario && !initialHorario.includes("hs")) {
+        const withHs = `${initialHorario} hs`;
+        if (HORAS_DISPONIBLES.some((h) => h.value === withHs)) {
+          initialHorario = withHs;
+        }
+      }
+      setHorario(initialHorario);
     }
   }, [plan, isOpen]);
 
@@ -72,6 +95,10 @@ export default function MoveToDayModal({
       setIsSubmitting(false);
     }
   };
+
+  const hasCustomHorario = Boolean(
+    horario && !HORAS_DISPONIBLES.some((opt) => opt.value === horario),
+  );
 
   return (
     <div
@@ -153,23 +180,33 @@ export default function MoveToDayModal({
             </div>
           </div>
 
-          {/* Hora específica opcional */}
+          {/* Selector de Horario (Select nativo estilizado) */}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="plan-horario"
               className="text-xs font-semibold text-slate-700 flex items-center gap-1"
             >
               <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>Hora específica (opcional, ej. 20:30)</span>
+              <span>Horario específico</span>
             </label>
-            <input
-              id="plan-horario"
-              type="text"
-              value={horario}
-              onChange={(e) => setHorario(e.target.value)}
-              placeholder="Ej. 20:30 o 14:00"
-              className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
-            />
+            <div className="relative">
+              <select
+                id="plan-horario"
+                value={horario}
+                onChange={(e) => setHorario(e.target.value)}
+                className="w-full p-3 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+              >
+                {HORAS_DISPONIBLES.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+                {hasCustomHorario && <option value={horario}>{horario}</option>}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                <Clock className="w-4 h-4" />
+              </div>
+            </div>
           </div>
 
           {/* Botón de Confirmación */}

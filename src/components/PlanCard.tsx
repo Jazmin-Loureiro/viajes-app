@@ -9,6 +9,7 @@ import {
   Calendar,
   Trash2,
   Clock,
+  Pencil,
 } from "lucide-react";
 
 export interface PlanCardProps {
@@ -17,10 +18,11 @@ export interface PlanCardProps {
   onEliminar?: (id: string) => void;
   onAsignarItinerario?: (plan: PlanViaje) => void;
   onDescartarAideas?: (id: string) => void;
+  onEditar?: (plan: PlanViaje) => void;
 }
 
 const CATEGORIA_CONFIG: Record<
-  CategoriaPlan,
+  string,
   { label: string; emoji: string; badgeClass: string }
 > = {
   comida: {
@@ -43,6 +45,37 @@ const CATEGORIA_CONFIG: Record<
     emoji: "🛍️",
     badgeClass: "bg-rose-50 text-rose-700 border-rose-200/80",
   },
+  alojamiento: {
+    label: "Alojamiento",
+    emoji: "🏨",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200/80",
+  },
+  transporte: {
+    label: "Transporte",
+    emoji: "🚇",
+    badgeClass: "bg-cyan-50 text-cyan-700 border-cyan-200/80",
+  },
+};
+
+const resolveCategoria = (cat: string) => {
+  if (CATEGORIA_CONFIG[cat]) {
+    return CATEGORIA_CONFIG[cat];
+  }
+  const match = cat.match(
+    /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u,
+  );
+  if (match) {
+    return {
+      label: match[2] || match[1],
+      emoji: match[1],
+      badgeClass: "bg-slate-50 text-slate-700 border-slate-200/80",
+    };
+  }
+  return {
+    label: cat,
+    emoji: "🏷️",
+    badgeClass: "bg-slate-50 text-slate-700 border-slate-200/80",
+  };
 };
 
 export default function PlanCard({
@@ -51,16 +84,14 @@ export default function PlanCard({
   onEliminar,
   onAsignarItinerario,
   onDescartarAideas,
+  onEditar,
 }: PlanCardProps) {
-  const categoriaInfo = CATEGORIA_CONFIG[plan.categoria] || {
-    label: plan.categoria,
-    emoji: "📍",
-    badgeClass: "bg-slate-50 text-slate-700 border-slate-200/80",
-  };
+  const categoriaInfo = resolveCategoria(plan.categoria);
 
   const hasBottomActions =
     (onAsignarItinerario && !plan.fecha) ||
     (onDescartarAideas && Boolean(plan.fecha)) ||
+    Boolean(onEditar) ||
     Boolean(onEliminar);
 
   return (
@@ -188,6 +219,21 @@ export default function PlanCard({
               className="h-10 min-h-[40px] px-3.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium rounded-xl flex items-center justify-center gap-1.5 transition-colors flex-1"
             >
               <span>Volver a ideas</span>
+            </button>
+          )}
+
+          {onEditar && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditar(plan);
+              }}
+              aria-label="Editar plan"
+              title="Editar plan"
+              className="h-10 w-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors shrink-0"
+            >
+              <Pencil className="w-4 h-4" />
             </button>
           )}
 

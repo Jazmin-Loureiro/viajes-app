@@ -12,6 +12,7 @@ export interface IdeasViewProps {
   onEliminar: (id: string) => void;
   onAsignarItinerario: (plan: PlanViaje) => void;
   onOpenAddModal: () => void;
+  onEditar?: (plan: PlanViaje) => void;
 }
 
 export default function IdeasView({
@@ -21,6 +22,7 @@ export default function IdeasView({
   onEliminar,
   onAsignarItinerario,
   onOpenAddModal,
+  onEditar,
 }: IdeasViewProps) {
   const ideasFiltradas = planes.filter((plan) => {
     if (selectedCategory === "todos") return true;
@@ -60,6 +62,7 @@ export default function IdeasView({
           onToggleCompletado={onToggleCompletado}
           onEliminar={onEliminar}
           onAsignarItinerario={onAsignarItinerario}
+          onEditar={onEditar}
         />
       ))}
     </div>

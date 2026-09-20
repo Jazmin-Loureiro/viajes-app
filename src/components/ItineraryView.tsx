@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { PlanViaje, BloqueHorario } from "@/lib/supabase";
+import { PlanViaje, BloqueHorario, CategoriaPlan } from "@/lib/supabase";
 import PlanCard from "./PlanCard";
 import { Calendar, Sun, Utensils, Sunset, Wine, Moon } from "lucide-react";
 
 export interface ItineraryViewProps {
   planes: PlanViaje[];
+  selectedCategory: CategoriaPlan | "todos";
   onToggleCompletado: (id: string, completado: boolean) => void;
   onEliminar: (id: string) => void;
   onDescartarAideas: (id: string) => void;
+  onEditar?: (plan: PlanViaje) => void;
 }
 
 const BLOQUES: { id: BloqueHorario; label: string; icon: string }[] = [
@@ -42,11 +44,42 @@ const formatDateLabel = (dateStr: string) => {
   }
 };
 
+const parseTimeToMinutes = (timeStr: string): number => {
+  const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  }
+  return 9999;
+};
+
+const compareHorarios = (planA: PlanViaje, planB: PlanViaje): number => {
+  const horaA = (planA.horario || (planA as any).hora || "").trim();
+  const horaB = (planB.horario || (planB as any).hora || "").trim();
+
+  const hasA = Boolean(horaA);
+  const hasB = Boolean(horaB);
+
+  if (!hasA && !hasB) return 0;
+  if (!hasA) return 1; // Planes sin hora quedan al final del bloque
+  if (!hasB) return -1;
+
+  const minA = parseTimeToMinutes(horaA);
+  const minB = parseTimeToMinutes(horaB);
+
+  if (minA !== minB) {
+    return minA - minB;
+  }
+
+  return horaA.localeCompare(horaB);
+};
+
 export default function ItineraryView({
   planes,
+  selectedCategory,
   onToggleCompletado,
   onEliminar,
   onDescartarAideas,
+  onEditar,
 }: ItineraryViewProps) {
   // Extraer fechas únicas ordenadas de forma ascendente
   const uniqueDates = useMemo(() => {
@@ -71,16 +104,34 @@ export default function ItineraryView({
     }
   }, [uniqueDates, selectedDate]);
 
-  // Filtrar planes para el día seleccionado
+  // Filtrar planes para el día seleccionado y categoría activa
   const dayPlans = useMemo(() => {
-    return planes.filter((p) => p.fecha === selectedDate);
-  }, [planes, selectedDate]);
+    return planes.filter((p) => {
+      if (p.fecha !== selectedDate) return false;
+      if (selectedCategory !== "todos" && p.categoria !== selectedCategory) {
+        return false;
+      }
+      return true;
+    });
+  }, [planes, selectedDate, selectedCategory]);
+
+  // Planes de jornada completa / todo el día para la fecha y categoría seleccionada
+  const planesTodoElDia = useMemo(() => {
+    return dayPlans
+      .filter((p) => p.bloque === "todo_el_dia")
+      .sort(compareHorarios);
+  }, [dayPlans]);
 
   // Planes que tengan la fecha seleccionada pero sin bloque asignado o desconocido
   const planesSinBloque = useMemo(() => {
-    return dayPlans.filter(
-      (p) => !p.bloque || !BLOQUES.some((b) => b.id === p.bloque),
-    );
+    return dayPlans
+      .filter(
+        (p) =>
+          !p.bloque ||
+          (!BLOQUES.some((b) => b.id === p.bloque) &&
+            p.bloque !== "todo_el_dia"),
+      )
+      .sort(compareHorarios);
   }, [dayPlans]);
 
   const displayedDates = uniqueDates.length > 0 ? uniqueDates : [selectedDate];
@@ -91,7 +142,16 @@ export default function ItineraryView({
       <div className="flex gap-2 overflow-x-auto px-4 py-2.5 bg-white/70 backdrop-blur-sm border-b border-slate-100 no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {displayedDates.map((dateStr, index) => {
           const isSelected = dateStr === selectedDate;
-          const countForDate = planes.filter((p) => p.fecha === dateStr).length;
+          const countForDate = planes.filter((p) => {
+            if (p.fecha !== dateStr) return false;
+            if (
+              selectedCategory !== "todos" &&
+              p.categoria !== selectedCategory
+            ) {
+              return false;
+            }
+            return true;
+          }).length;
 
           return (
             <button
@@ -128,24 +188,72 @@ export default function ItineraryView({
         })}
       </div>
 
-      {/* Contenido según si hay planes para la fecha seleccionada */}
+      {/* Contenido según si hay planes para la fecha y categoría seleccionada */}
       {dayPlans.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-4 text-center pb-28">
-          <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
-            <Calendar className="w-8 h-8 stroke-[1.5]" />
-          </div>
-          <h3 className="text-base font-semibold text-slate-800 mb-1">
-            No hay planes para este día
-          </h3>
-          <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
-            Ve a la <strong>Bolsa de Ideas</strong> y presiona &quot;Asignar al
-            Itinerario&quot; para organizar tus actividades.
-          </p>
+          {selectedCategory !== "todos" ? (
+            <>
+              <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+                <Calendar className="w-8 h-8 stroke-[1.5]" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">
+                No hay planes en esta categoría para este día
+              </h3>
+              <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+                Prueba seleccionando otra categoría o &quot;Todos&quot; para ver
+                las actividades programadas.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
+                <Calendar className="w-8 h-8 stroke-[1.5]" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mb-1">
+                No hay planes para este día
+              </h3>
+              <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+                Ve a la <strong>Bolsa de Ideas</strong> y presiona &quot;Asignar
+                al Itinerario&quot; para organizar tus actividades.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-6 pb-28 pt-3 px-4 max-w-2xl mx-auto w-full">
+          {/* Sección destacada para actividades de jornada completa / todo el día */}
+          {planesTodoElDia.length > 0 && (
+            <section className="space-y-2.5 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">☀️</span>
+                  <h3 className="text-sm font-bold text-amber-950">
+                    Planes de todo el día / Jornada larga
+                  </h3>
+                </div>
+                <span className="text-[11px] font-semibold text-amber-800 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-200/50">
+                  {planesTodoElDia.length}
+                </span>
+              </div>
+              <div className="space-y-3 pt-1">
+                {planesTodoElDia.map((plan) => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    onToggleCompletado={onToggleCompletado}
+                    onEliminar={onEliminar}
+                    onDescartarAideas={onDescartarAideas}
+                    onEditar={onEditar}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           {BLOQUES.map((b) => {
-            const planesDelBloque = dayPlans.filter((p) => p.bloque === b.id);
+            const planesDelBloque = dayPlans
+              .filter((p) => p.bloque === b.id)
+              .sort(compareHorarios);
             if (planesDelBloque.length === 0) return null;
 
             return (
@@ -161,7 +269,7 @@ export default function ItineraryView({
                   </span>
                 </div>
 
-                {/* Tarjetas del bloque */}
+                {/* Tarjetas del bloque ordenadas por horario */}
                 <div className="space-y-3">
                   {planesDelBloque.map((plan) => (
                     <PlanCard
@@ -170,6 +278,7 @@ export default function ItineraryView({
                       onToggleCompletado={onToggleCompletado}
                       onEliminar={onEliminar}
                       onDescartarAideas={onDescartarAideas}
+                      onEditar={onEditar}
                     />
                   ))}
                 </div>
@@ -197,6 +306,7 @@ export default function ItineraryView({
                     onToggleCompletado={onToggleCompletado}
                     onEliminar={onEliminar}
                     onDescartarAideas={onDescartarAideas}
+                    onEditar={onEditar}
                   />
                 ))}
               </div>

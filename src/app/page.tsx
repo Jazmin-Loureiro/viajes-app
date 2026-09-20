@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   supabase,
   PlanViaje,
@@ -14,6 +14,14 @@ import PlanModal from "@/components/PlanModal";
 import MoveToDayModal from "@/components/MoveToDayModal";
 import { Plus, Sparkles, Loader2 } from "lucide-react";
 
+const DEFAULT_CATEGORIES: { key: CategoriaPlan | "todos"; label: string }[] = [
+  { key: "todos", label: "✨ Todos" },
+  { key: "comida", label: "🍔 Comida" },
+  { key: "paseo", label: "🏛️ Paseos" },
+  { key: "cine_show", label: "🎟️ Cine/Show" },
+  { key: "compras", label: "🛍️ Compras" },
+];
+
 export default function Home() {
   // Estados principales
   const [planes, setPlanes] = useState<PlanViaje[]>([]);
@@ -23,8 +31,47 @@ export default function Home() {
     CategoriaPlan | "todos"
   >("todos");
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [planAEditar, setPlanAEditar] = useState<PlanViaje | null>(null);
   const [selectedPlanToMove, setSelectedPlanToMove] =
     useState<PlanViaje | null>(null);
+
+  // Categorías disponibles dinámicas: combina fijas con las que existan en los planes
+  const availableCategories = useMemo(() => {
+    const defaultKeys = new Set(DEFAULT_CATEGORIES.map((c) => c.key));
+    const customList: { key: CategoriaPlan | "todos"; label: string }[] = [];
+    const planesCats = Array.from(
+      new Set(planes.map((p) => p.categoria).filter(Boolean)),
+    );
+
+    const KNOWN_EXTRA: Record<string, string> = {
+      alojamiento: "🏨 Alojamiento",
+      transporte: "🚇 Transporte",
+    };
+
+    for (const cat of planesCats) {
+      if (!defaultKeys.has(cat)) {
+        if (KNOWN_EXTRA[cat]) {
+          customList.push({ key: cat, label: KNOWN_EXTRA[cat] });
+        } else {
+          const hasEmoji =
+            /^\p{Extended_Pictographic}|\p{Emoji_Presentation}/u.test(cat);
+          const label = hasEmoji ? cat : `🏷️ ${cat}`;
+          customList.push({ key: cat, label });
+        }
+      }
+    }
+    return [...DEFAULT_CATEGORIES, ...customList];
+  }, [planes]);
+
+  // Si la categoría seleccionada deja de existir (por ejemplo al eliminar o editar un plan), volver a "todos"
+  useEffect(() => {
+    if (
+      selectedCategory !== "todos" &&
+      !availableCategories.some((c) => c.key === selectedCategory)
+    ) {
+      setSelectedCategory("todos");
+    }
+  }, [availableCategories, selectedCategory]);
 
   // Cargar todos los planes ordenados por created_at ascendente
   const fetchPlanes = useCallback(async () => {
@@ -66,13 +113,16 @@ export default function Home() {
     };
   }, [fetchPlanes]);
 
-  // Handler: Crear nuevo plan en la bolsa de ideas
+  // Handler: Crear nuevo plan (en ideas o asignado directamente)
   const handleCrearPlan = async (nuevoPlan: {
     titulo: string;
     categoria: CategoriaPlan;
     ubicacion: string;
     descripcion: string;
     link_maps: string;
+    fecha?: string | null;
+    bloque?: BloqueHorario | null;
+    horario?: string | null;
   }) => {
     try {
       const { error } = await supabase.from("planes_viaje").insert({
@@ -81,9 +131,9 @@ export default function Home() {
         ubicacion: nuevoPlan.ubicacion || null,
         link_maps: nuevoPlan.link_maps || null,
         descripcion: nuevoPlan.descripcion || null,
-        fecha: null,
-        bloque: null,
-        horario: null,
+        fecha: nuevoPlan.fecha || null,
+        bloque: nuevoPlan.bloque || null,
+        horario: nuevoPlan.horario || null,
         completado: false,
       });
 
@@ -91,11 +141,46 @@ export default function Home() {
         console.error("Error al crear plan:", error);
         alert("No se pudo guardar el plan. Por favor intenta de nuevo.");
       } else {
+        setIsAddModalOpen(false);
         await fetchPlanes();
       }
     } catch (err) {
       console.error("Error al crear plan:", err);
     }
+  };
+
+  // Handler: Editar plan existente
+  const handleEditarPlan = async (id: string, datos: Partial<PlanViaje>) => {
+    // Actualización optimista
+    setPlanes((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...datos } : p)),
+    );
+
+    try {
+      const { error } = await supabase
+        .from("planes_viaje")
+        .update(datos)
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error al actualizar plan:", error);
+        alert("No se pudieron guardar los cambios.");
+        await fetchPlanes();
+      } else {
+        setIsAddModalOpen(false);
+        setPlanAEditar(null);
+        await fetchPlanes();
+      }
+    } catch (err) {
+      console.error("Error al actualizar plan:", err);
+      await fetchPlanes();
+    }
+  };
+
+  // Abrir modal de edición
+  const handleEditarClick = (plan: PlanViaje) => {
+    setPlanAEditar(plan);
+    setIsAddModalOpen(true);
   };
 
   // Handler: Alternar estado completado
@@ -213,6 +298,7 @@ export default function Home() {
         onCategoryChange={setSelectedCategory}
         ideasCount={ideasPlanes.length}
         itineraryCount={itinerarioPlanes.length}
+        categories={availableCategories}
       />
 
       {/* Contenido principal o indicador de carga */}
@@ -233,14 +319,20 @@ export default function Home() {
               onToggleCompletado={handleToggleCompletado}
               onEliminar={handleEliminar}
               onAsignarItinerario={handleAsignarItinerario}
-              onOpenAddModal={() => setIsAddModalOpen(true)}
+              onOpenAddModal={() => {
+                setPlanAEditar(null);
+                setIsAddModalOpen(true);
+              }}
+              onEditar={handleEditarClick}
             />
           ) : (
             <ItineraryView
               planes={itinerarioPlanes}
+              selectedCategory={selectedCategory}
               onToggleCompletado={handleToggleCompletado}
               onEliminar={handleEliminar}
               onDescartarAideas={handleDescartarAideas}
+              onEditar={handleEditarClick}
             />
           )}
         </main>
@@ -250,7 +342,10 @@ export default function Home() {
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
         <button
           type="button"
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setPlanAEditar(null);
+            setIsAddModalOpen(true);
+          }}
           aria-label="Agregar nuevo plan"
           title="Agregar nuevo plan"
           className="h-14 w-14 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
@@ -262,8 +357,13 @@ export default function Home() {
       {/* Modales */}
       <PlanModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSave={handleCrearPlan}
+        planAEditar={planAEditar}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setPlanAEditar(null);
+        }}
+        onCrear={handleCrearPlan}
+        onActualizar={handleEditarPlan}
       />
 
       <MoveToDayModal

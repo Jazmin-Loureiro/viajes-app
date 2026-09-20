@@ -10,6 +10,7 @@ export interface HeaderNavProps {
   onCategoryChange: (category: CategoriaPlan | "todos") => void;
   ideasCount: number;
   itineraryCount: number;
+  categories?: { key: CategoriaPlan | "todos"; label: string }[];
 }
 
 interface CategoryOption {
@@ -17,7 +18,7 @@ interface CategoryOption {
   label: string;
 }
 
-const CATEGORIES: CategoryOption[] = [
+const DEFAULT_CATEGORIES: CategoryOption[] = [
   { key: "todos", label: "✨ Todos" },
   { key: "comida", label: "🍔 Comida" },
   { key: "paseo", label: "🏛️ Paseos" },
@@ -32,7 +33,10 @@ export default function HeaderNav({
   onCategoryChange,
   ideasCount,
   itineraryCount,
+  categories,
 }: HeaderNavProps) {
+  const displayCategories =
+    categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES;
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 pt-3 pb-2 px-4 shadow-sm">
       {/* Título y subtítulo superior */}
@@ -99,7 +103,7 @@ export default function HeaderNav({
 
       {/* Filtros horizontales por categoría */}
       <div className="flex gap-2 overflow-x-auto py-2 mt-1 no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {CATEGORIES.map((cat) => {
+        {displayCategories.map((cat) => {
           const isActive = selectedCategory === cat.key;
           return (
             <button

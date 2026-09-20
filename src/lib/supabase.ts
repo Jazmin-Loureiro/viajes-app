@@ -1,7 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 
-export type CategoriaPlan = "comida" | "paseo" | "cine_show" | "compras";
-export type BloqueHorario = "mañana" | "mediodia" | "tarde" | "cena" | "noche";
+export type CategoriaPlan =
+  | "comida"
+  | "paseo"
+  | "cine_show"
+  | "compras"
+  | "alojamiento"
+  | "transporte"
+  | (string & {});
+export type BloqueHorario =
+  | "todo_el_dia"
+  | "mañana"
+  | "mediodia"
+  | "tarde"
+  | "cena"
+  | "noche";
 
 export interface PlanViaje {
   id: string;
