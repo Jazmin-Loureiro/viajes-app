@@ -12,6 +12,7 @@ import IdeasView from "@/components/IdeasView";
 import ItineraryView from "@/components/ItineraryView";
 import PlanModal from "@/components/PlanModal";
 import MoveToDayModal from "@/components/MoveToDayModal";
+import GeminiModal from "@/components/GeminiModal";
 import { Plus, Sparkles, Loader2 } from "lucide-react";
 
 const DEFAULT_CATEGORIES: { key: CategoriaPlan | "todos"; label: string }[] = [
@@ -31,11 +32,25 @@ export default function Home() {
     CategoriaPlan | "todos"
   >("todos");
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isGeminiModalOpen, setIsGeminiModalOpen] = useState<boolean>(false);
   const [planAEditar, setPlanAEditar] = useState<PlanViaje | null>(null);
   const [selectedPlanToMove, setSelectedPlanToMove] =
     useState<PlanViaje | null>(null);
 
-  // Categorías disponibles dinámicas: combina fijas con las que existan en los planes
+  // Categorías por defecto
+  const categoriasDefault = ["comida", "paseo", "cine_show", "compras"];
+
+  // Lista consolidada de categorías disponibles combinando las default con todas las categorías de Supabase (sin localStorage)
+  const categoriasDisponibles = useMemo(() => {
+    return Array.from(
+      new Set([
+        ...categoriasDefault,
+        ...planes.map((p) => p.categoria).filter(Boolean),
+      ]),
+    );
+  }, [planes]);
+
+  // Categorías para HeaderNav (formateadas con emojis)
   const availableCategories = useMemo(() => {
     const defaultKeys = new Set(DEFAULT_CATEGORIES.map((c) => c.key));
     const customList: { key: CategoriaPlan | "todos"; label: string }[] = [];
@@ -284,6 +299,67 @@ export default function Home() {
     }
   };
 
+  // Handler: Agregar sugerencia generada por Gemini directamente a la bolsa de ideas
+  const handleAgregarIdeaGemini = async (idea: {
+    titulo: string;
+    categoria: string;
+    notas: string;
+    ubicacion?: string;
+  }) => {
+    try {
+      const { error } = await supabase.from("planes_viaje").insert({
+        titulo: idea.titulo,
+        categoria: idea.categoria,
+        ubicacion: idea.ubicacion || null,
+        link_maps: null,
+        descripcion: idea.notas || null,
+        fecha: null,
+        bloque: null,
+        horario: null,
+        completado: false,
+      });
+
+      if (error) {
+        console.error("Error al guardar idea de Gemini:", error);
+        alert("No se pudo guardar la sugerencia.");
+      } else {
+        await fetchPlanes();
+      }
+    } catch (err) {
+      console.error("Error al guardar idea de Gemini:", err);
+    }
+  };
+
+  // Handler: Asignar al itinerario desde Gemini -> Abre PlanModal precargado con switch activo
+  const handleAsignarItinerarioDesdeGemini = (idea: {
+    titulo: string;
+    categoria: string;
+    notas: string;
+    ubicacion?: string;
+  }) => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    setIsGeminiModalOpen(false);
+    setPlanAEditar({
+      id: "", // Marca como nueva creación y no edición de ID existente
+      created_at: new Date().toISOString(),
+      titulo: idea.titulo,
+      categoria: idea.categoria,
+      descripcion: idea.notas || "",
+      ubicacion: idea.ubicacion || "",
+      link_maps: null,
+      fecha: todayStr,
+      bloque: "mañana",
+      horario: null,
+      completado: false,
+    });
+    setIsAddModalOpen(true);
+  };
+
   // Separación de listas de planes
   const ideasPlanes = planes.filter((p) => p.fecha === null);
   const itinerarioPlanes = planes.filter((p) => p.fecha !== null);
@@ -324,6 +400,7 @@ export default function Home() {
                 setIsAddModalOpen(true);
               }}
               onEditar={handleEditarClick}
+              onOpenGeminiModal={() => setIsGeminiModalOpen(true)}
             />
           ) : (
             <ItineraryView
@@ -339,7 +416,17 @@ export default function Home() {
       )}
 
       {/* Botones de acción flotantes (Bottom Floating Actions) */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-center">
+        <button
+          type="button"
+          onClick={() => setIsGeminiModalOpen(true)}
+          aria-label="Ideas con IA (Gemini)"
+          title="Pedir ideas con IA (Gemini)"
+          className="h-11 w-11 bg-gradient-to-tr from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center border border-white/20 active:scale-95 transition-all"
+        >
+          <Sparkles className="w-5 h-5 text-amber-300" />
+        </button>
+
         <button
           type="button"
           onClick={() => {
@@ -358,6 +445,7 @@ export default function Home() {
       <PlanModal
         isOpen={isAddModalOpen}
         planAEditar={planAEditar}
+        categoriasDisponibles={categoriasDisponibles}
         onClose={() => {
           setIsAddModalOpen(false);
           setPlanAEditar(null);
@@ -371,6 +459,14 @@ export default function Home() {
         plan={selectedPlanToMove}
         onClose={() => setSelectedPlanToMove(null)}
         onConfirm={handleConfirmMover}
+      />
+
+      <GeminiModal
+        isOpen={isGeminiModalOpen}
+        destino="Ciudad Autónoma de Buenos Aires (CABA), Argentina"
+        onClose={() => setIsGeminiModalOpen(false)}
+        onAgregarIdea={handleAgregarIdeaGemini}
+        onAsignarItinerario={handleAsignarItinerarioDesdeGemini}
       />
     </div>
   );

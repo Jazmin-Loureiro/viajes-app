@@ -8,6 +8,7 @@ export interface PlanModalProps {
   isOpen: boolean;
   onClose: () => void;
   planAEditar?: PlanViaje | null;
+  categoriasDisponibles?: string[];
   onCrear?: (nuevoPlan: {
     titulo: string;
     categoria: CategoriaPlan;
@@ -43,12 +44,43 @@ export interface PlanModalProps {
   }) => Promise<void> | void;
 }
 
-const CATEGORIAS_DEFAULT: { id: string; label: string; emoji: string }[] = [
-  { id: "comida", label: "Comida", emoji: "🍔" },
-  { id: "paseo", label: "Paseo", emoji: "🌳" },
-  { id: "cine_show", label: "Cine/Show", emoji: "🎟️" },
-  { id: "compras", label: "Compras", emoji: "🛍️" },
-];
+interface CategoriaItem {
+  id: string;
+  label: string;
+  emoji: string;
+}
+
+const parseCategoriaItem = (cat: string): CategoriaItem => {
+  const KNOWN: Record<string, { label: string; emoji: string }> = {
+    comida: { label: "Comida", emoji: "🍔" },
+    paseo: { label: "Paseo", emoji: "🌳" },
+    cine_show: { label: "Cine/Show", emoji: "🎟️" },
+    compras: { label: "Compras", emoji: "🛍️" },
+    alojamiento: { label: "Alojamiento", emoji: "🏨" },
+    transporte: { label: "Transporte", emoji: "🚇" },
+  };
+
+  if (KNOWN[cat]) {
+    return { id: cat, label: KNOWN[cat].label, emoji: KNOWN[cat].emoji };
+  }
+
+  const match = cat.match(
+    /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u,
+  );
+  if (match) {
+    return {
+      id: cat,
+      emoji: match[1],
+      label: match[2] || cat,
+    };
+  }
+
+  return {
+    id: cat,
+    emoji: "🏷️",
+    label: cat,
+  };
+};
 
 const BLOQUES: { id: BloqueHorario; label: string; icon: string }[] = [
   { id: "todo_el_dia", label: "Todo el día", icon: "☀️" },
@@ -86,10 +118,21 @@ export default function PlanModal({
   isOpen,
   onClose,
   planAEditar,
+  categoriasDisponibles,
   onCrear,
   onActualizar,
   onSave,
 }: PlanModalProps) {
+  const listaCategorias: CategoriaItem[] = React.useMemo(() => {
+    const defaultIds = ["comida", "paseo", "cine_show", "compras"];
+    const merged =
+      categoriasDisponibles && categoriasDisponibles.length > 0
+        ? Array.from(new Set([...defaultIds, ...categoriasDisponibles]))
+        : defaultIds;
+
+    return merged.map(parseCategoriaItem);
+  }, [categoriasDisponibles]);
+
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState<CategoriaPlan>("comida");
   const [isCustomCategoria, setIsCustomCategoria] = useState(false);
@@ -113,15 +156,17 @@ export default function PlanModal({
         setLinkMaps(planAEditar.link_maps || "");
         setDescripcion(planAEditar.descripcion || "");
 
-        const isDefault = CATEGORIAS_DEFAULT.some(
-          (c) => c.id === planAEditar.categoria,
+        const matchingCat = listaCategorias.find(
+          (c) =>
+            c.id.toLowerCase() === (planAEditar.categoria || "").toLowerCase(),
         );
-        if (isDefault) {
+
+        if (matchingCat) {
           setIsCustomCategoria(false);
-          setCategoria(planAEditar.categoria);
+          setCategoria(matchingCat.id);
           setCustomEmoji("🏷️");
           setCustomNombre("");
-        } else {
+        } else if (planAEditar.categoria) {
           setIsCustomCategoria(true);
           const match = planAEditar.categoria.match(
             /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u,
@@ -134,6 +179,11 @@ export default function PlanModal({
             setCustomNombre(planAEditar.categoria);
           }
           setCategoria(planAEditar.categoria);
+        } else {
+          setIsCustomCategoria(false);
+          setCategoria("comida");
+          setCustomEmoji("🏷️");
+          setCustomNombre("");
         }
 
         const tieneFecha = Boolean(planAEditar.fecha);
@@ -219,7 +269,7 @@ export default function PlanModal({
         horario: asignarDirecto ? horario.trim() || null : null,
       };
 
-      if (planAEditar) {
+      if (isEditing && planAEditar?.id) {
         if (onActualizar) {
           await onActualizar(planAEditar.id, datosBase);
         }
@@ -243,7 +293,7 @@ export default function PlanModal({
     }
   };
 
-  const isEditing = Boolean(planAEditar);
+  const isEditing = Boolean(planAEditar && planAEditar.id);
   const hasCustomHorario = Boolean(
     horario && !HORAS_DISPONIBLES.some((opt) => opt.value === horario),
   );
@@ -307,7 +357,7 @@ export default function PlanModal({
               Categoría
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {CATEGORIAS_DEFAULT.map((cat) => {
+              {listaCategorias.map((cat) => {
                 const isSelected = !isCustomCategoria && categoria === cat.id;
                 return (
                   <button
@@ -317,14 +367,14 @@ export default function PlanModal({
                       setIsCustomCategoria(false);
                       setCategoria(cat.id);
                     }}
-                    className={`h-11 px-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all ${
+                    className={`h-11 px-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all truncate ${
                       isSelected
                         ? "bg-slate-900 border-slate-900 text-white shadow-sm"
                         : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 active:bg-slate-200"
                     }`}
                   >
                     <span>{cat.emoji}</span>
-                    <span>{cat.label}</span>
+                    <span className="truncate">{cat.label}</span>
                   </button>
                 );
               })}

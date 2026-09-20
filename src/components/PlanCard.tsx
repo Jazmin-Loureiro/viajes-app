@@ -78,6 +78,26 @@ const resolveCategoria = (cat: string) => {
   };
 };
 
+const getMapsUrl = (plan: PlanViaje): string => {
+  if (
+    plan.link_maps &&
+    (plan.link_maps.startsWith("http://") ||
+      plan.link_maps.startsWith("https://"))
+  ) {
+    return plan.link_maps;
+  }
+
+  const ubi = (plan.ubicacion || "").trim();
+  if (ubi.startsWith("http://") || ubi.startsWith("https://")) {
+    return ubi;
+  }
+
+  const terminoBusqueda = `${plan.titulo || ""} ${ubi}`.trim();
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    terminoBusqueda,
+  )}`;
+};
+
 export default function PlanCard({
   plan,
   onToggleCompletado,
@@ -87,6 +107,7 @@ export default function PlanCard({
   onEditar,
 }: PlanCardProps) {
   const categoriaInfo = resolveCategoria(plan.categoria);
+  const mapsUrl = getMapsUrl(plan);
 
   const hasBottomActions =
     (onAsignarItinerario && !plan.fecha) ||
@@ -96,7 +117,7 @@ export default function PlanCard({
 
   return (
     <div
-      className={`rounded-2xl p-4 shadow-sm border flex flex-col gap-2.5 transition-all ${
+      className={`rounded-2xl p-4 shadow-xs border flex flex-col gap-2.5 transition-all ${
         plan.completado
           ? "opacity-60 bg-slate-50 border-slate-200"
           : "bg-white border-slate-100"
@@ -154,42 +175,38 @@ export default function PlanCard({
         {plan.titulo}
       </h3>
 
-      {/* Ubicación y link a Maps */}
-      {plan.ubicacion && (
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-          {plan.link_maps ? (
-            <a
-              href={plan.link_maps}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-blue-600 hover:underline inline-flex items-center gap-1 truncate max-w-full"
-              title="Abrir en Google Maps"
-            >
-              <span className="truncate">{plan.ubicacion}</span>
-              <ExternalLink className="w-3 h-3 shrink-0 text-blue-500" />
-            </a>
-          ) : (
-            <span className="truncate">{plan.ubicacion}</span>
-          )}
+      {/* Ubicación y búsqueda inteligente en Google Maps */}
+      {plan.ubicacion ? (
+        <div className="flex items-center">
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors group cursor-pointer max-w-full"
+            title="Abrir en Google Maps"
+          >
+            <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-blue-600 transition-colors" />
+            <span className="truncate group-hover:underline">
+              {plan.ubicacion}
+            </span>
+            <ExternalLink className="w-3 h-3 shrink-0 text-slate-300 group-hover:text-blue-500 transition-colors" />
+          </a>
         </div>
-      )}
-
-      {!plan.ubicacion && plan.link_maps && (
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+      ) : plan.link_maps ? (
+        <div className="flex items-center">
           <a
             href={plan.link_maps}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline inline-flex items-center gap-1"
+            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline transition-colors group cursor-pointer max-w-full"
             title="Abrir en Google Maps"
           >
-            <span>Ver mapa</span>
-            <ExternalLink className="w-3 h-3 shrink-0 text-blue-500" />
+            <MapPin className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+            <span>Ver en mapa</span>
+            <ExternalLink className="w-3 h-3 shrink-0 text-blue-400" />
           </a>
         </div>
-      )}
+      ) : null}
 
       {/* Descripción / Tips */}
       {plan.descripcion && (
