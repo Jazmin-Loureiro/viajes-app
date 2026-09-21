@@ -170,11 +170,22 @@ export default function HeaderNav({
           {/* Toggle Modo Oscuro / Claro */}
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => setTheme(isDark ? "light" : "dark")}
             aria-label={
-              isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+              mounted
+                ? isDark
+                  ? "Cambiar a modo claro"
+                  : "Cambiar a modo oscuro"
+                : "Cambiar tema"
             }
-            title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            title={
+              mounted
+                ? isDark
+                  ? "Cambiar a modo claro"
+                  : "Cambiar a modo oscuro"
+                : "Cambiar tema"
+            }
             className="w-8 h-8 rounded-full flex items-center justify-center border border-borderSubtle bg-app text-content-muted hover:text-content-main hover:bg-surface transition-all cursor-pointer shadow-2xs shrink-0"
           >
             {mounted ? (
@@ -187,7 +198,7 @@ export default function HeaderNav({
                 />
               )
             ) : (
-              <span className="w-4 h-4" />
+              <span className="w-4 h-4 inline-block" aria-hidden="true" />
             )}
           </button>
         </div>
