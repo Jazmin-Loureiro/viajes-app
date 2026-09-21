@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { CategoriaPlan } from "@/lib/supabase";
 
 export interface HeaderNavProps {
@@ -41,17 +42,26 @@ export default function HeaderNav({
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 pt-3 pb-2 px-4 shadow-sm">
       {/* Título y subtítulo superior */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-            <span>✈️</span>
-            <span>Nuestro Viaje</span>
-          </h1>
-          <p className="text-xs text-slate-400 font-normal">
-            Itinerario y planes en pareja
-          </p>
+        <div className="flex items-center gap-2.5">
+          <Image
+            src="/logo.svg"
+            width={36}
+            height={36}
+            alt="Nuestro Viaje"
+            priority
+            className="w-9 h-9 rounded-xl shadow-xs shrink-0 object-contain"
+          />
+          <div>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">
+              Nuestro Viaje
+            </h1>
+            <p className="text-xs text-slate-400 font-normal mt-0.5">
+              Itinerario y planes en pareja
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100/80 text-emerald-700 text-[11px] font-medium shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>En sincronía</span>
         </div>
       </div>

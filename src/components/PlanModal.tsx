@@ -106,6 +106,58 @@ const HORAS_DISPONIBLES: { value: string; label: string }[] = (() => {
   return options;
 })();
 
+const HORAS_RANGO: { value: string; label: string }[] = (() => {
+  const options: { value: string; label: string }[] = [
+    { value: "", label: "Sin definir" },
+  ];
+  for (let hour = 7; hour <= 23; hour++) {
+    for (const min of [0, 30]) {
+      const hStr = String(hour).padStart(2, "0");
+      const mStr = String(min).padStart(2, "0");
+      const timeStr = `${hStr}:${mStr}`;
+      options.push({ value: timeStr, label: `${timeStr} hs` });
+    }
+  }
+  return options;
+})();
+
+const parseHorarioRango = (
+  horarioStr?: string | null,
+): { inicio: string; fin: string } => {
+  if (!horarioStr) return { inicio: "", fin: "" };
+  const raw = horarioStr.trim();
+
+  // "10:00 a 19:00 hs" o "10:00 - 19:00"
+  const matchRango = raw.match(/(\d{1,2}:\d{2})\s*(?:a|-)\s*(\d{1,2}:\d{2})/i);
+  if (matchRango) {
+    const pad = (s: string) => (s.length === 4 ? `0${s}` : s);
+    return { inicio: pad(matchRango[1]), fin: pad(matchRango[2]) };
+  }
+
+  // "Desde las 10:00 hs"
+  const matchDesde = raw.match(/desde\s*(?:las)?\s*(\d{1,2}:\d{2})/i);
+  if (matchDesde) {
+    const pad = (s: string) => (s.length === 4 ? `0${s}` : s);
+    return { inicio: pad(matchDesde[1]), fin: "" };
+  }
+
+  // "Hasta las 19:00 hs"
+  const matchHasta = raw.match(/hasta\s*(?:las)?\s*(\d{1,2}:\d{2})/i);
+  if (matchHasta) {
+    const pad = (s: string) => (s.length === 4 ? `0${s}` : s);
+    return { inicio: "", fin: pad(matchHasta[1]) };
+  }
+
+  // Fallback simple "10:00" o "10:00 hs"
+  const matchSimple = raw.match(/(\d{1,2}:\d{2})/);
+  if (matchSimple) {
+    const pad = (s: string) => (s.length === 4 ? `0${s}` : s);
+    return { inicio: pad(matchSimple[1]), fin: "" };
+  }
+
+  return { inicio: "", fin: "" };
+};
+
 const getTodayString = () => {
   const d = new Date();
   const year = d.getFullYear();
@@ -146,6 +198,8 @@ export default function PlanModal({
   const [fecha, setFecha] = useState(getTodayString());
   const [bloque, setBloque] = useState<BloqueHorario>("mañana");
   const [horario, setHorario] = useState("");
+  const [horaInicio, setHoraInicio] = useState("");
+  const [horaFin, setHoraFin] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -198,6 +252,10 @@ export default function PlanModal({
           }
         }
         setHorario(initialHorario);
+
+        const { inicio, fin } = parseHorarioRango(planAEditar.horario);
+        setHoraInicio(inicio);
+        setHoraFin(fin);
       } else {
         setTitulo("");
         setCategoria("comida");
@@ -211,6 +269,8 @@ export default function PlanModal({
         setFecha(getTodayString());
         setBloque("mañana");
         setHorario("");
+        setHoraInicio("");
+        setHoraFin("");
       }
       setIsSubmitting(false);
     }
@@ -231,6 +291,8 @@ export default function PlanModal({
     setFecha(getTodayString());
     setBloque("mañana");
     setHorario("");
+    setHoraInicio("");
+    setHoraFin("");
     setIsSubmitting(false);
   };
 
@@ -258,6 +320,25 @@ export default function PlanModal({
         }
       }
 
+      let finalHorario: string | null = null;
+      if (asignarDirecto) {
+        if (bloque === "todo_el_dia") {
+          const ini = horaInicio.trim();
+          const fin = horaFin.trim();
+          if (ini && fin) {
+            finalHorario = `${ini} a ${fin} hs`;
+          } else if (ini) {
+            finalHorario = `Desde las ${ini} hs`;
+          } else if (fin) {
+            finalHorario = `Hasta las ${fin} hs`;
+          } else {
+            finalHorario = null;
+          }
+        } else {
+          finalHorario = horario.trim() || null;
+        }
+      }
+
       const datosBase = {
         titulo: titulo.trim(),
         categoria: finalCategoria,
@@ -266,7 +347,7 @@ export default function PlanModal({
         link_maps: linkMaps.trim() || null,
         fecha: asignarDirecto ? fecha : null,
         bloque: asignarDirecto ? bloque : null,
-        horario: asignarDirecto ? horario.trim() || null : null,
+        horario: finalHorario,
       };
 
       if (isEditing && planAEditar?.id) {
@@ -569,35 +650,119 @@ export default function PlanModal({
                 </div>
 
                 {/* Selector de Horario */}
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="itinerario-horario"
-                    className="text-xs font-semibold text-slate-700 flex items-center gap-1"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Horario específico</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="itinerario-horario"
-                      value={horario}
-                      onChange={(e) => setHorario(e.target.value)}
-                      className="w-full p-2.5 pr-9 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
-                    >
-                      {HORAS_DISPONIBLES.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                      {hasCustomHorario && (
-                        <option value={horario}>{horario}</option>
-                      )}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-                      <Clock className="w-4 h-4" />
+                {bloque === "todo_el_dia" ? (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Rango de horario (opcional)</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Hora Inicio */}
+                      <div className="flex flex-col gap-1">
+                        <label
+                          htmlFor="itinerario-hora-inicio"
+                          className="text-[11px] font-medium text-slate-500"
+                        >
+                          Hora inicio (opcional)
+                        </label>
+                        <div className="relative">
+                          <select
+                            id="itinerario-hora-inicio"
+                            value={horaInicio}
+                            onChange={(e) => setHoraInicio(e.target.value)}
+                            className="w-full p-2.5 pr-8 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+                          >
+                            {HORAS_RANGO.map((opt) => (
+                              <option
+                                key={`ini-${opt.value}`}
+                                value={opt.value}
+                              >
+                                {opt.label}
+                              </option>
+                            ))}
+                            {horaInicio &&
+                              !HORAS_RANGO.some(
+                                (opt) => opt.value === horaInicio,
+                              ) && (
+                                <option value={horaInicio}>
+                                  {horaInicio} hs
+                                </option>
+                              )}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                            <Clock className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Hora Fin */}
+                      <div className="flex flex-col gap-1">
+                        <label
+                          htmlFor="itinerario-hora-fin"
+                          className="text-[11px] font-medium text-slate-500"
+                        >
+                          Hora fin (opcional)
+                        </label>
+                        <div className="relative">
+                          <select
+                            id="itinerario-hora-fin"
+                            value={horaFin}
+                            onChange={(e) => setHoraFin(e.target.value)}
+                            className="w-full p-2.5 pr-8 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+                          >
+                            {HORAS_RANGO.map((opt) => (
+                              <option
+                                key={`fin-${opt.value}`}
+                                value={opt.value}
+                              >
+                                {opt.label}
+                              </option>
+                            ))}
+                            {horaFin &&
+                              !HORAS_RANGO.some(
+                                (opt) => opt.value === horaFin,
+                              ) && (
+                                <option value={horaFin}>{horaFin} hs</option>
+                              )}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                            <Clock className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <label
+                      htmlFor="itinerario-horario"
+                      className="text-xs font-semibold text-slate-700 flex items-center gap-1"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Horario específico</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="itinerario-horario"
+                        value={horario}
+                        onChange={(e) => setHorario(e.target.value)}
+                        className="w-full p-2.5 pr-9 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+                      >
+                        {HORAS_DISPONIBLES.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                        {hasCustomHorario && (
+                          <option value={horario}>{horario}</option>
+                        )}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -11,6 +11,7 @@ import {
   MapPin,
   Tag,
   Calendar,
+  RefreshCw,
 } from "lucide-react";
 
 export interface IdeaSugerida {
@@ -55,6 +56,7 @@ export default function GeminiModal({
   onAsignarItinerario,
 }: GeminiModalProps) {
   const [consulta, setConsulta] = useState("");
+  const [ultimaConsulta, setUltimaConsulta] = useState("");
   const [cargando, setCargando] = useState(false);
   const [ideas, setIdeas] = useState<IdeaSugerida[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -64,12 +66,11 @@ export default function GeminiModal({
   if (!isOpen) return null;
 
   const handleBuscar = async (textoABuscar?: string) => {
-    const texto = (textoABuscar ?? consulta).trim();
+    const texto = (textoABuscar ?? ultimaConsulta ?? consulta).trim();
     if (!texto) return;
 
-    if (textoABuscar) {
-      setConsulta(textoABuscar);
-    }
+    setConsulta(texto);
+    setUltimaConsulta(texto);
 
     setCargando(true);
     setError(null);
@@ -248,13 +249,27 @@ export default function GeminiModal({
           {/* Lista de Ideas generadas */}
           {!cargando && ideas.length > 0 && (
             <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">
-                  Sugerencias encontradas ({ideas.length})
-                </span>
-                <span className="text-[11px] text-slate-400">
-                  Toca &quot;+ Agregar&quot; para sumar al viaje
-                </span>
+              <div className="flex items-center justify-between gap-2 pb-1">
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">
+                    Sugerencias ({ideas.length})
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Toca para sumar al viaje
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  disabled={cargando}
+                  onClick={() => handleBuscar()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold border border-violet-200/60 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                  title="Generar otras opciones con la misma búsqueda"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${cargando ? "animate-spin" : ""}`}
+                  />
+                  <span>Probar otras opciones</span>
+                </button>
               </div>
 
               {ideas.map((idea, index) => {
@@ -316,7 +331,7 @@ export default function GeminiModal({
                         ) : (
                           <>
                             <Plus className="w-3.5 h-3.5" />
-                            <span>+ Guardar Idea</span>
+                            <span>Guardar Idea</span>
                           </>
                         )}
                       </button>
@@ -330,7 +345,7 @@ export default function GeminiModal({
                           title="Asignar directamente a un día y bloque en el Itinerario"
                         >
                           <Calendar className="w-3.5 h-3.5" />
-                          <span>📅 Al Itinerario</span>
+                          <span>Al Itinerario</span>
                         </button>
                       ) : (
                         <div />
@@ -339,6 +354,21 @@ export default function GeminiModal({
                   </div>
                 );
               })}
+
+              {/* Botón inferior para generar más ideas */}
+              <div className="pt-2 pb-1 flex justify-center">
+                <button
+                  type="button"
+                  disabled={cargando}
+                  onClick={() => handleBuscar()}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-violet-50 hover:text-violet-700 text-slate-700 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${cargando ? "animate-spin" : ""}`}
+                  />
+                  <span>🔄 Generar más ideas</span>
+                </button>
+              </div>
             </div>
           )}
 

@@ -24,6 +24,10 @@ export const metadata: Metadata = {
   title: "Nuestro Viaje",
   description: "Itinerario y planes en pareja",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
