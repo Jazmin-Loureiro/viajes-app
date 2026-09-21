@@ -135,21 +135,21 @@ export default function GeminiModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
       {/* Contenedor del Modal / Bottom sheet */}
-      <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+      <div className="bg-surface rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-borderSubtle/60 animate-in slide-in-from-bottom duration-300">
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-violet-50 via-purple-50 to-indigo-50">
+        <div className="p-4 sm:p-5 border-b border-borderSubtle flex items-center justify-between bg-brand-light">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-2xl bg-brand text-white flex items-center justify-center shadow-xs">
               <Sparkles className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 leading-tight flex items-center gap-1.5">
+              <h2 className="text-base font-bold text-content-main leading-tight flex items-center gap-1.5">
                 <span>Ideas con Gemini</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-brand/15 text-brand px-2 py-0.5 rounded-full">
                   IA
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 font-normal">
+              <p className="text-xs text-content-muted font-normal">
                 Sugerencias personalizadas para disfrutar en pareja
               </p>
             </div>
@@ -157,7 +157,7 @@ export default function GeminiModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors border border-slate-200/60"
+            className="w-8 h-8 rounded-full bg-surface/90 hover:bg-surface text-content-muted hover:text-content-main flex items-center justify-center transition-colors border border-borderSubtle"
             aria-label="Cerrar modal"
           >
             <X className="w-4 h-4" />
@@ -175,12 +175,12 @@ export default function GeminiModal({
                 onChange={(e) => setConsulta(e.target.value)}
                 placeholder="Ej: Lugares para merendar en Palermo o paseos de tarde..."
                 disabled={cargando}
-                className="w-full pl-3.5 pr-24 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                className="w-full pl-3.5 pr-24 py-3 bg-app border border-borderSubtle rounded-xl text-xs sm:text-sm text-content-main placeholder:text-content-muted focus:bg-surface focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand transition-all"
               />
               <button
                 type="submit"
                 disabled={cargando || !consulta.trim()}
-                className="absolute right-1.5 px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 text-white disabled:text-slate-400 text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
+                className="absolute right-1.5 px-3.5 py-2 rounded-lg bg-brand hover:bg-brand-hover disabled:bg-borderSubtle text-white disabled:text-content-muted text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
               >
                 {cargando ? (
                   <>
@@ -198,7 +198,7 @@ export default function GeminiModal({
 
             {/* Chips de sugerencias rápidas */}
             <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+              <span className="text-[11px] font-semibold text-content-muted uppercase tracking-wider block">
                 Ideas rápidas:
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -208,7 +208,7 @@ export default function GeminiModal({
                     type="button"
                     disabled={cargando}
                     onClick={() => handleBuscar(item)}
-                    className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200 text-slate-700 border border-transparent transition-all active:scale-95 disabled:opacity-50"
+                    className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-app hover:bg-brand-light hover:text-brand hover:border-brand/30 text-content-main border border-borderSubtle transition-all active:scale-95 disabled:opacity-50"
                   >
                     {item}
                   </button>
@@ -234,13 +234,13 @@ export default function GeminiModal({
           {/* Estado de Carga */}
           {cargando && (
             <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center animate-bounce">
+              <div className="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center animate-bounce">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-700">
+              <p className="text-xs sm:text-sm font-semibold text-content-main">
                 Gemini está diseñando sugerencias para ustedes...
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-content-muted">
                 Buscando los mejores lugares y actividades
               </p>
             </div>
@@ -251,10 +251,10 @@ export default function GeminiModal({
             <div className="space-y-3 pt-1">
               <div className="flex items-center justify-between gap-2 pb-1">
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">
+                  <span className="text-xs font-bold text-content-main block">
                     Sugerencias ({ideas.length})
                   </span>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-content-muted">
                     Toca para sumar al viaje
                   </span>
                 </div>
@@ -262,7 +262,7 @@ export default function GeminiModal({
                   type="button"
                   disabled={cargando}
                   onClick={() => handleBuscar()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold border border-violet-200/60 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-light hover:bg-brand/15 text-brand text-xs font-semibold border border-borderSubtle transition-all active:scale-95 disabled:opacity-50 shrink-0"
                   title="Generar otras opciones con la misma búsqueda"
                 >
                   <RefreshCw
@@ -279,17 +279,17 @@ export default function GeminiModal({
                 return (
                   <div
                     key={`${idea.titulo}-${index}`}
-                    className="p-4 bg-slate-50/90 hover:bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2.5 transition-all shadow-xs"
+                    className="p-4 bg-surface hover:bg-app/40 border border-borderSubtle rounded-2xl space-y-2.5 transition-all shadow-xs"
                   >
                     {/* Cabecera: Categoría a la izquierda, Ubicación a la derecha */}
                     <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-violet-100 text-violet-800 shrink-0">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-brand-light text-brand shrink-0">
                         <Tag className="w-2.5 h-2.5" />
                         <span>{idea.categoria}</span>
                       </span>
                       {idea.ubicacion && (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium truncate ml-auto">
-                          <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                        <span className="inline-flex items-center gap-1 text-[11px] text-content-muted font-medium truncate ml-auto">
+                          <MapPin className="w-3 h-3 shrink-0 text-content-muted" />
                           <span className="truncate">{idea.ubicacion}</span>
                         </span>
                       )}
@@ -297,18 +297,18 @@ export default function GeminiModal({
 
                     {/* Cuerpo: Título y notas */}
                     <div className="space-y-1.5">
-                      <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                      <h4 className="text-sm font-bold text-content-main leading-snug">
                         {idea.titulo}
                       </h4>
                       {idea.notas && (
-                        <p className="text-xs text-slate-600 leading-relaxed font-normal bg-white p-3 rounded-xl border border-slate-100">
+                        <p className="text-xs text-content-main leading-relaxed font-normal bg-app p-3 rounded-xl border border-borderSubtle/50">
                           {idea.notas}
                         </p>
                       )}
                     </div>
 
                     {/* Pie de la tarjeta: Botones de acción en fila */}
-                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60">
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-borderSubtle">
                       {/* Botón 1: [ + Guardar Idea ] */}
                       <button
                         type="button"
@@ -317,7 +317,7 @@ export default function GeminiModal({
                         className={`h-9 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
                           yaAgregada
                             ? "bg-emerald-100 text-emerald-800 cursor-default"
-                            : "bg-slate-100 hover:bg-slate-200 text-slate-700 active:bg-slate-300"
+                            : "bg-app hover:bg-borderSubtle/60 text-content-main active:bg-borderSubtle border border-borderSubtle"
                         }`}
                         title="Guardar en la Bolsa de Ideas"
                       >
@@ -341,7 +341,7 @@ export default function GeminiModal({
                         <button
                           type="button"
                           onClick={() => onAsignarItinerario(idea)}
-                          className="h-9 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-all active:scale-95"
+                          className="h-9 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-brand hover:bg-brand-hover text-white shadow-xs transition-all active:scale-95"
                           title="Asignar directamente a un día y bloque en el Itinerario"
                         >
                           <Calendar className="w-3.5 h-3.5" />
@@ -361,7 +361,7 @@ export default function GeminiModal({
                   type="button"
                   disabled={cargando}
                   onClick={() => handleBuscar()}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-violet-50 hover:text-violet-700 text-slate-700 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-light hover:bg-brand/15 text-brand text-xs font-semibold border border-borderSubtle transition-all active:scale-95 disabled:opacity-50"
                 >
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${cargando ? "animate-spin" : ""}`}
@@ -375,14 +375,14 @@ export default function GeminiModal({
           {/* Estado inicial sin búsqueda */}
           {!cargando && ideas.length === 0 && !error && (
             <div className="py-8 text-center space-y-2">
-              <div className="w-12 h-12 rounded-full bg-violet-50 text-violet-500 mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-brand-light text-brand mx-auto flex items-center justify-center">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <p className="text-xs sm:text-sm font-medium text-slate-600">
+              <p className="text-xs sm:text-sm font-medium text-content-main">
                 Escribe lo que tienen ganas de hacer o elige una idea rápida
                 arriba.
               </p>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto">
+              <p className="text-xs text-content-muted max-w-xs mx-auto">
                 Gemini recomendará planes específicos para sumar directamente a
                 la bolsa de ideas.
               </p>
@@ -391,12 +391,12 @@ export default function GeminiModal({
         </div>
 
         {/* Footer del Modal */}
-        <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-4 sm:px-5">
+        <div className="p-3 bg-app border-t border-borderSubtle flex items-center justify-between text-[11px] text-content-muted px-4 sm:px-5">
           <span>Potenciado por Google Gemini</span>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-600 hover:text-slate-900 font-semibold"
+            className="text-content-main hover:text-brand font-semibold"
           >
             Cerrar
           </button>

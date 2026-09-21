@@ -1,1 +1,42 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:is(.dark, .dark *));
+
+@theme {
+  --color-app: var(--bg-app);
+  --color-surface: var(--bg-surface);
+  --color-border-subtle: var(--border-subtle);
+  --color-borderSubtle: var(--border-subtle);
+  --color-brand: var(--brand-primary);
+  --color-brand-hover: var(--brand-primary-hover);
+  --color-brand-light: var(--brand-light);
+  --color-content-main: var(--text-main);
+  --color-content-muted: var(--text-muted);
+}
+
+:root {
+  --bg-app: #faf8f6;
+  --bg-surface: #ffffff;
+  --border-subtle: #e7e5e4;
+  --brand-primary: #4338ca;
+  --brand-primary-hover: #3730a3;
+  --brand-light: #eef2ff;
+  --text-main: #1c1917;
+  --text-muted: #78716c;
+}
+
+.dark {
+  --bg-app: #121214;
+  --bg-surface: #1c1b20;
+  --border-subtle: #2c2a33;
+  --brand-primary: #818cf8;
+  --brand-primary-hover: #6366f1;
+  --brand-light: #252336;
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+}

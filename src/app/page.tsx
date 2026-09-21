@@ -16,11 +16,11 @@ import GeminiModal from "@/components/GeminiModal";
 import { Plus, Sparkles, Loader2 } from "lucide-react";
 
 const DEFAULT_CATEGORIES: { key: CategoriaPlan | "todos"; label: string }[] = [
-  { key: "todos", label: "✨ Todos" },
-  { key: "comida", label: "🍔 Comida" },
-  { key: "paseo", label: "🏛️ Paseos" },
-  { key: "cine_show", label: "🎟️ Cine/Show" },
-  { key: "compras", label: "🛍️ Compras" },
+  { key: "todos", label: "Todos" },
+  { key: "comida", label: "Comida" },
+  { key: "paseo", label: "Paseos" },
+  { key: "cine_show", label: "Cine/Show" },
+  { key: "compras", label: "Compras" },
 ];
 
 export default function Home() {
@@ -50,7 +50,7 @@ export default function Home() {
     );
   }, [planes]);
 
-  // Categorías para HeaderNav (formateadas con emojis)
+  // Categorías para HeaderNav (formateadas de forma limpia)
   const availableCategories = useMemo(() => {
     const defaultKeys = new Set(DEFAULT_CATEGORIES.map((c) => c.key));
     const customList: { key: CategoriaPlan | "todos"; label: string }[] = [];
@@ -59,8 +59,8 @@ export default function Home() {
     );
 
     const KNOWN_EXTRA: Record<string, string> = {
-      alojamiento: "🏨 Alojamiento",
-      transporte: "🚇 Transporte",
+      alojamiento: "Alojamiento",
+      transporte: "Transporte",
     };
 
     for (const cat of planesCats) {
@@ -68,10 +68,7 @@ export default function Home() {
         if (KNOWN_EXTRA[cat]) {
           customList.push({ key: cat, label: KNOWN_EXTRA[cat] });
         } else {
-          const hasEmoji =
-            /^\p{Extended_Pictographic}|\p{Emoji_Presentation}/u.test(cat);
-          const label = hasEmoji ? cat : `🏷️ ${cat}`;
-          customList.push({ key: cat, label });
+          customList.push({ key: cat, label: cat });
         }
       }
     }
@@ -365,7 +362,7 @@ export default function Home() {
   const itinerarioPlanes = planes.filter((p) => p.fecha !== null);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-50 relative shadow-sm">
+    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-app relative shadow-sm">
       {/* Navegación y cabecera fija */}
       <HeaderNav
         activeTab={activeTab}
@@ -380,8 +377,8 @@ export default function Home() {
       {/* Contenido principal o indicador de carga */}
       {cargando ? (
         <div className="flex-1 flex flex-col items-center justify-center p-8 gap-3 my-auto">
-          <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
-          <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+          <Loader2 className="w-8 h-8 text-content-muted animate-spin" />
+          <p className="text-xs text-content-muted font-medium flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Cargando planes de viaje...</span>
           </p>
@@ -422,7 +419,7 @@ export default function Home() {
           onClick={() => setIsGeminiModalOpen(true)}
           aria-label="Ideas con IA (Gemini)"
           title="Pedir ideas con IA (Gemini)"
-          className="h-11 w-11 bg-gradient-to-tr from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center border border-white/20 active:scale-95 transition-all"
+          className="h-11 w-11 bg-gradient-to-tr from-brand via-purple-600 to-brand-hover text-white rounded-full shadow-lg flex items-center justify-center border border-white/20 active:scale-95 transition-all"
         >
           <Sparkles className="w-5 h-5 text-amber-300" />
         </button>
@@ -435,7 +432,7 @@ export default function Home() {
           }}
           aria-label="Agregar nuevo plan"
           title="Agregar nuevo plan"
-          className="h-14 w-14 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+          className="h-14 w-14 bg-brand hover:bg-brand-hover text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="w-6 h-6 stroke-[2.5]" />
         </button>

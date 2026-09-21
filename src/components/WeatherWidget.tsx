@@ -155,8 +155,8 @@ export function WeatherStrip({
 }: WeatherStripProps) {
   if (loading && forecast.length === 0) {
     return (
-      <div className="px-4 py-2 flex items-center gap-2 text-xs text-slate-400 bg-slate-50/60 border-b border-slate-100 animate-pulse">
-        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
+      <div className="px-4 py-2 flex items-center gap-2 text-xs text-content-muted bg-app/80 border-b border-borderSubtle animate-pulse">
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-content-muted" />
         <span>Consultando pronóstico en CABA...</span>
       </div>
     );
@@ -165,13 +165,13 @@ export function WeatherStrip({
   if (!forecast || forecast.length === 0) return null;
 
   return (
-    <div className="bg-slate-50/90 border-b border-slate-100/90 py-2 px-4 transition-all">
+    <div className="bg-app/80 border-b border-borderSubtle py-2 px-4 transition-all">
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-          <CloudSun className="w-3.5 h-3.5 text-indigo-500" />
+        <div className="flex items-center gap-1 text-[11px] font-semibold text-content-muted uppercase tracking-wider">
+          <CloudSun className="w-3.5 h-3.5 text-brand" />
           <span>Pronóstico CABA</span>
         </div>
-        <span className="text-[10px] text-slate-400">Próximos 7 días</span>
+        <span className="text-[10px] text-content-muted">Próximos 7 días</span>
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
@@ -184,21 +184,21 @@ export function WeatherStrip({
               onClick={() => onSelectDate?.(day.date)}
               className={`shrink-0 flex flex-col items-center justify-center min-w-[68px] py-1.5 px-2 rounded-xl border text-xs transition-all ${
                 isSelected
-                  ? "bg-white border-indigo-300 text-indigo-950 shadow-xs ring-2 ring-indigo-500/20"
-                  : "bg-white/80 hover:bg-white border-slate-200/70 text-slate-700 hover:border-slate-300"
+                  ? "bg-surface border-brand text-content-main shadow-2xs ring-2 ring-brand/20"
+                  : "bg-surface/80 hover:bg-surface border-borderSubtle text-content-main hover:border-brand/40"
               }`}
               title={`${formatWeatherDayName(day.date)}: ${day.label}, Mín ${Math.round(day.minTemp)}° / Máx ${Math.round(day.maxTemp)}°`}
             >
-              <span className="text-[10px] font-semibold text-slate-500 capitalize">
+              <span className="text-[10px] font-semibold text-content-muted capitalize">
                 {formatWeatherDayName(day.date)}
               </span>
               <span className="text-base my-0.5 select-none">{day.emoji}</span>
-              <div className="flex items-center gap-0.5 text-[10px] font-medium text-slate-600">
-                <span className="font-bold text-slate-800">
+              <div className="flex items-center gap-0.5 text-[10px] font-medium text-content-muted">
+                <span className="font-bold text-content-main">
                   {Math.round(day.maxTemp)}°
                 </span>
-                <span className="text-slate-400 text-[9px]">/</span>
-                <span className="text-slate-500 font-normal">
+                <span className="text-content-muted/60 text-[9px]">/</span>
+                <span className="text-content-muted font-normal">
                   {Math.round(day.minTemp)}°
                 </span>
               </div>
@@ -220,14 +220,14 @@ export function WeatherPill({ weather, className = "" }: WeatherPillProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200/70 shadow-2xs transition-all ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-light text-brand border border-borderSubtle shadow-2xs transition-all ${className}`}
       title={`${weather.label} en CABA · Mín ${Math.round(weather.minTemp)}°C / Máx ${Math.round(weather.maxTemp)}°C`}
     >
       <span className="text-sm leading-none">{weather.emoji}</span>
       <span>
         {Math.round(weather.maxTemp)}° / {Math.round(weather.minTemp)}°
       </span>
-      <span className="text-[10px] font-normal text-sky-600/80 hidden sm:inline">
+      <span className="text-[10px] font-normal text-content-muted hidden sm:inline">
         ({weather.label})
       </span>
     </span>

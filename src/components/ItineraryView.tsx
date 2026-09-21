@@ -4,7 +4,17 @@ import React, { useState, useMemo, useEffect } from "react";
 import { PlanViaje, BloqueHorario, CategoriaPlan } from "@/lib/supabase";
 import PlanCard from "./PlanCard";
 import { useWeatherForecast, WeatherStrip, WeatherPill } from "./WeatherWidget";
-import { Calendar, Sun, Utensils, Sunset, Wine, Moon } from "lucide-react";
+import {
+  Calendar,
+  CalendarDays,
+  Sunrise,
+  Sun,
+  Sunset,
+  Wine,
+  Moon,
+  SunMedium,
+  Pin,
+} from "lucide-react";
 
 export interface ItineraryViewProps {
   planes: PlanViaje[];
@@ -15,12 +25,18 @@ export interface ItineraryViewProps {
   onEditar?: (plan: PlanViaje) => void;
 }
 
-const BLOQUES: { id: BloqueHorario; label: string; icon: string }[] = [
-  { id: "mañana", label: "Mañana", icon: "☀️" },
-  { id: "mediodia", label: "Mediodía", icon: "🍽️" },
-  { id: "tarde", label: "Tarde", icon: "🌤️" },
-  { id: "cena", label: "Cena", icon: "🍷" },
-  { id: "noche", label: "Noche", icon: "🌙" },
+interface BloqueConfig {
+  id: BloqueHorario;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+}
+
+const BLOQUES: BloqueConfig[] = [
+  { id: "mañana", label: "Mañana", icon: Sunrise },
+  { id: "mediodia", label: "Mediodía", icon: Sun },
+  { id: "tarde", label: "Tarde", icon: Sunset },
+  { id: "cena", label: "Cena", icon: Wine },
+  { id: "noche", label: "Noche", icon: Moon },
 ];
 
 const getTodayString = () => {
@@ -163,7 +179,7 @@ export default function ItineraryView({
   return (
     <div className="flex flex-col min-h-full">
       {/* Selector superior horizontal de fechas/días con scroll suave */}
-      <div className="flex gap-2 overflow-x-auto px-4 py-2.5 bg-white/70 backdrop-blur-sm border-b border-slate-100 no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-2 overflow-x-auto px-4 py-2.5 bg-surface/85 backdrop-blur-md border-b border-borderSubtle no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {displayedDates.map((dateStr, index) => {
           const isSelected = dateStr === selectedDate;
           const dayWeather = getWeatherForDate(dateStr);
@@ -185,14 +201,14 @@ export default function ItineraryView({
               onClick={() => setSelectedDate(dateStr)}
               className={`shrink-0 flex flex-col items-center justify-center min-w-[76px] py-1.5 px-3 rounded-xl border text-xs transition-all ${
                 isSelected
-                  ? "bg-slate-900 border-slate-900 text-white shadow-sm"
-                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  ? "bg-brand border-brand text-white shadow-xs"
+                  : "bg-surface border-borderSubtle text-content-muted hover:text-content-main hover:bg-app"
               }`}
             >
               <div className="flex items-center gap-1">
                 <span
                   className={`text-[10px] uppercase font-semibold tracking-wider ${
-                    isSelected ? "text-slate-300" : "text-slate-400"
+                    isSelected ? "text-indigo-200" : "text-content-muted"
                   }`}
                 >
                   Día {index + 1}
@@ -208,7 +224,7 @@ export default function ItineraryView({
                 {countForDate > 0 && (
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      isSelected ? "bg-emerald-400" : "bg-slate-300"
+                      isSelected ? "bg-emerald-300" : "bg-borderSubtle"
                     }`}
                   />
                 )}
@@ -237,8 +253,8 @@ export default function ItineraryView({
       {dayPlans.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center pb-28">
           {/* Cabecera del día con pastilla de clima */}
-          <div className="flex items-center gap-2 mb-4 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
-            <span className="text-xs font-bold text-slate-800 capitalize">
+          <div className="flex items-center gap-2 mb-4 bg-surface px-3 py-1.5 rounded-xl border border-borderSubtle shadow-2xs">
+            <span className="text-xs font-bold text-content-main capitalize">
               {formatFullDateLabel(selectedDate)}
             </span>
             {selectedDayWeather && <WeatherPill weather={selectedDayWeather} />}
@@ -246,26 +262,26 @@ export default function ItineraryView({
 
           {selectedCategory !== "todos" ? (
             <>
-              <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+              <div className="w-16 h-16 rounded-full bg-app border border-borderSubtle text-content-muted flex items-center justify-center mb-3">
                 <Calendar className="w-8 h-8 stroke-[1.5]" />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-1">
+              <h3 className="text-base font-semibold text-content-main mb-1">
                 No hay planes en esta categoría para este día
               </h3>
-              <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+              <p className="text-xs text-content-muted max-w-xs leading-relaxed">
                 Prueba seleccionando otra categoría o &quot;Todos&quot; para ver
                 las actividades programadas.
               </p>
             </>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
+              <div className="w-16 h-16 rounded-full bg-brand-light border border-borderSubtle text-brand flex items-center justify-center mb-3">
                 <Calendar className="w-8 h-8 stroke-[1.5]" />
               </div>
-              <h3 className="text-base font-semibold text-slate-800 mb-1">
+              <h3 className="text-base font-semibold text-content-main mb-1">
                 No hay planes para este día
               </h3>
-              <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+              <p className="text-xs text-content-muted max-w-xs leading-relaxed">
                 Ve a la <strong>Bolsa de Ideas</strong> y presiona &quot;Asignar
                 al Itinerario&quot; para organizar tus actividades.
               </p>
@@ -275,31 +291,34 @@ export default function ItineraryView({
       ) : (
         <div className="space-y-6 pb-28 pt-3 px-4 max-w-2xl mx-auto w-full">
           {/* Encabezado del día seleccionado con pastilla de clima */}
-          <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200/70">
+          <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-borderSubtle">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-bold text-slate-900 capitalize">
+              <h2 className="text-base font-bold text-content-main capitalize">
                 {formatFullDateLabel(selectedDate)}
               </h2>
               {selectedDayWeather && (
                 <WeatherPill weather={selectedDayWeather} />
               )}
             </div>
-            <span className="text-xs font-medium text-slate-400 shrink-0">
+            <span className="text-xs font-medium text-content-muted shrink-0">
               {dayPlans.length} {dayPlans.length === 1 ? "plan" : "planes"}
             </span>
           </div>
 
           {/* Sección destacada para actividades de jornada completa / todo el día */}
           {planesTodoElDia.length > 0 && (
-            <section className="space-y-2.5 p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 shadow-xs">
+            <section className="space-y-2.5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">☀️</span>
-                  <h3 className="text-sm font-bold text-amber-950">
+                  <SunMedium
+                    className="w-4.5 h-4.5 text-amber-500 shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <h3 className="text-sm font-bold text-amber-950 dark:text-amber-200">
                     Planes de todo el día / Jornada larga
                   </h3>
                 </div>
-                <span className="text-[11px] font-semibold text-amber-800 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-200/50">
+                <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                   {planesTodoElDia.length}
                 </span>
               </div>
@@ -324,15 +343,20 @@ export default function ItineraryView({
               .sort(compareHorarios);
             if (planesDelBloque.length === 0) return null;
 
+            const BloqueIcon = b.icon;
+
             return (
               <section key={b.id} className="space-y-2.5">
                 {/* Encabezado del bloque */}
                 <div className="flex items-center gap-2">
-                  <span className="text-base">{b.icon}</span>
-                  <h3 className="text-sm font-bold text-slate-800 capitalize">
+                  <BloqueIcon
+                    className="w-4 h-4 text-brand shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <h3 className="text-sm font-bold text-content-main capitalize">
                     {b.label}
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-semibold text-content-muted bg-app border border-borderSubtle px-2 py-0.5 rounded-full">
                     {planesDelBloque.length}
                   </span>
                 </div>
@@ -358,11 +382,14 @@ export default function ItineraryView({
           {planesSinBloque.length > 0 && (
             <section className="space-y-2.5">
               <div className="flex items-center gap-2">
-                <span className="text-base">📌</span>
-                <h3 className="text-sm font-bold text-slate-800">
+                <Pin
+                  className="w-4 h-4 text-content-muted shrink-0"
+                  strokeWidth={1.75}
+                />
+                <h3 className="text-sm font-bold text-content-main">
                   Otros momentos
                 </h3>
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-semibold text-content-muted bg-app border border-borderSubtle px-2 py-0.5 rounded-full">
                   {planesSinBloque.length}
                 </span>
               </div>

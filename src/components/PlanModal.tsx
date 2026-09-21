@@ -2,7 +2,37 @@
 
 import React, { useState, useEffect } from "react";
 import { CategoriaPlan, BloqueHorario, PlanViaje } from "@/lib/supabase";
-import { X, Plus, Check, Loader2, Calendar, Clock } from "lucide-react";
+import {
+  X,
+  Plus,
+  Check,
+  Loader2,
+  Calendar,
+  Clock,
+  UtensilsCrossed,
+  Compass,
+  Film,
+  ShoppingBag,
+  Hotel,
+  Bus,
+  Tag,
+  Sunrise,
+  Sun,
+  Sunset,
+  Wine,
+  Moon,
+  SunMedium,
+  Pencil,
+  Lightbulb,
+  Coffee,
+  Beer,
+  Camera,
+  Music,
+  Plane,
+  Train,
+  Heart,
+  Utensils,
+} from "lucide-react";
 
 export interface PlanModalProps {
   isOpen: boolean;
@@ -21,7 +51,7 @@ export interface PlanModalProps {
   }) => Promise<void> | void;
   onActualizar?: (
     id: string,
-    datosActualizados: {
+    datos: {
       titulo: string;
       categoria: CategoriaPlan;
       ubicacion: string | null;
@@ -44,51 +74,128 @@ export interface PlanModalProps {
   }) => Promise<void> | void;
 }
 
+export const ICONOS_SELECCIONABLES: {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+}[] = [
+  { id: "Coffee", label: "Café", icon: Coffee },
+  { id: "Beer", label: "Bar", icon: Beer },
+  { id: "Camera", label: "Cámara", icon: Camera },
+  { id: "Music", label: "Música", icon: Music },
+  { id: "Plane", label: "Vuelo", icon: Plane },
+  { id: "Train", label: "Transporte", icon: Train },
+  { id: "Heart", label: "Favorito", icon: Heart },
+  { id: "Tag", label: "Etiqueta", icon: Tag },
+];
+
+const CUSTOM_ICON_MAP: Record<
+  string,
+  React.ComponentType<{ className?: string; strokeWidth?: number }>
+> = {
+  coffee: Coffee,
+  beer: Beer,
+  camera: Camera,
+  music: Music,
+  plane: Plane,
+  train: Train,
+  heart: Heart,
+  tag: Tag,
+  utensils: Utensils,
+};
+
 interface CategoriaItem {
   id: string;
   label: string;
-  emoji: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }
 
 const parseCategoriaItem = (cat: string): CategoriaItem => {
-  const KNOWN: Record<string, { label: string; emoji: string }> = {
-    comida: { label: "Comida", emoji: "🍔" },
-    paseo: { label: "Paseo", emoji: "🌳" },
-    cine_show: { label: "Cine/Show", emoji: "🎟️" },
-    compras: { label: "Compras", emoji: "🛍️" },
-    alojamiento: { label: "Alojamiento", emoji: "🏨" },
-    transporte: { label: "Transporte", emoji: "🚇" },
+  const lower = (cat || "").toLowerCase();
+  const KNOWN: Record<
+    string,
+    {
+      label: string;
+      icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+    }
+  > = {
+    comida: { label: "Comida", icon: UtensilsCrossed },
+    paseo: { label: "Paseo", icon: Compass },
+    cine_show: { label: "Cine/Show", icon: Film },
+    compras: { label: "Compras", icon: ShoppingBag },
+    alojamiento: { label: "Alojamiento", icon: Hotel },
+    transporte: { label: "Transporte", icon: Bus },
   };
 
-  if (KNOWN[cat]) {
-    return { id: cat, label: KNOWN[cat].label, emoji: KNOWN[cat].emoji };
-  }
-
-  const match = cat.match(
-    /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u,
-  );
-  if (match) {
+  if (KNOWN[lower]) {
     return {
       id: cat,
-      emoji: match[1],
-      label: match[2] || cat,
+      label: KNOWN[lower].label,
+      icon: KNOWN[lower].icon,
+    };
+  }
+
+  // 1. Icono personalizado por prefijo (ej: "Coffee Cafeterías", "Beer Bares")
+  const iconMatch = cat.match(
+    /^(Coffee|Beer|Camera|Music|Plane|Train|Heart|Tag)[:\s]+(.*)$/i,
+  );
+  if (iconMatch) {
+    const iconKey = iconMatch[1].toLowerCase();
+    const IconComp = CUSTOM_ICON_MAP[iconKey] || Tag;
+    const cleanLabel = iconMatch[2].trim() || iconMatch[1];
+    return {
+      id: cat,
+      label: cleanLabel,
+      icon: IconComp,
+    };
+  }
+
+  // 2. Si tiene emoji guardado (como 🍕 en "Comida exótica"), sanitizar a vector puro
+  const emojiMatch = cat.match(
+    /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u,
+  );
+  if (emojiMatch) {
+    const rawEmoji = emojiMatch[1];
+    const cleanLabel =
+      (
+        emojiMatch[2] ||
+        cat.replace(
+          /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*/u,
+          "",
+        )
+      ).trim() || "Otra";
+    const isFood =
+      /[\u{1F354}-\u{1F37F}\u{1F950}-\u{1F96B}\u{2615}]/u.test(rawEmoji) ||
+      /comida|pizza|cafe|café|bar|resto|restaurante|postre|helado|cena|almuerzo/i.test(
+        cat,
+      );
+    return {
+      id: cat,
+      label: cleanLabel,
+      icon: isFood ? Utensils : Tag,
     };
   }
 
   return {
     id: cat,
-    emoji: "🏷️",
     label: cat,
+    icon: Tag,
   };
 };
 
-const BLOQUES: { id: BloqueHorario; label: string; icon: string }[] = [
-  { id: "todo_el_dia", label: "Todo el día", icon: "☀️" },
-  { id: "mañana", label: "Mañana", icon: "☀️" },
-  { id: "mediodia", label: "Mediodía", icon: "🍽️" },
-  { id: "tarde", label: "Tarde", icon: "🌤️" },
-  { id: "cena", label: "Cena", icon: "🍷" },
-  { id: "noche", label: "Noche", icon: "🌙" },
+interface BloqueModalConfig {
+  id: BloqueHorario;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+}
+
+const BLOQUES: BloqueModalConfig[] = [
+  { id: "todo_el_dia", label: "Todo el día", icon: SunMedium },
+  { id: "mañana", label: "Mañana", icon: Sunrise },
+  { id: "mediodia", label: "Mediodía", icon: Sun },
+  { id: "tarde", label: "Tarde", icon: Sunset },
+  { id: "cena", label: "Cena", icon: Wine },
+  { id: "noche", label: "Noche", icon: Moon },
 ];
 
 const HORAS_DISPONIBLES: { value: string; label: string }[] = (() => {
@@ -188,7 +295,7 @@ export default function PlanModal({
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState<CategoriaPlan>("comida");
   const [isCustomCategoria, setIsCustomCategoria] = useState(false);
-  const [customEmoji, setCustomEmoji] = useState("🏷️");
+  const [selectedCustomIcon, setSelectedCustomIcon] = useState("Tag");
   const [customNombre, setCustomNombre] = useState("");
 
   const [ubicacion, setUbicacion] = useState("");
@@ -218,25 +325,43 @@ export default function PlanModal({
         if (matchingCat) {
           setIsCustomCategoria(false);
           setCategoria(matchingCat.id);
-          setCustomEmoji("🏷️");
+          setSelectedCustomIcon("Tag");
           setCustomNombre("");
         } else if (planAEditar.categoria) {
           setIsCustomCategoria(true);
-          const match = planAEditar.categoria.match(
-            /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u,
+          const iconPrefixMatch = planAEditar.categoria.match(
+            /^(Coffee|Beer|Camera|Music|Plane|Train|Heart|Tag)[:\s]+(.*)$/i,
           );
-          if (match) {
-            setCustomEmoji(match[1]);
-            setCustomNombre(match[2] || "");
+          if (iconPrefixMatch) {
+            const found = ICONOS_SELECCIONABLES.find(
+              (i) => i.id.toLowerCase() === iconPrefixMatch[1].toLowerCase(),
+            );
+            setSelectedCustomIcon(found ? found.id : "Tag");
+            setCustomNombre(iconPrefixMatch[2].trim());
           } else {
-            setCustomEmoji("🏷️");
-            setCustomNombre(planAEditar.categoria);
+            const emojiMatch = planAEditar.categoria.match(
+              /^(\p{Extended_Pictographic}|\p{Emoji_Presentation})\s*(.*)$/u,
+            );
+            if (emojiMatch) {
+              const isFood =
+                /[\u{1F354}-\u{1F37F}\u{1F950}-\u{1F96B}\u{2615}]/u.test(
+                  emojiMatch[1],
+                ) ||
+                /comida|pizza|cafe|café|bar|resto|restaurante/i.test(
+                  planAEditar.categoria,
+                );
+              setSelectedCustomIcon(isFood ? "Coffee" : "Tag");
+              setCustomNombre(emojiMatch[2].trim());
+            } else {
+              setSelectedCustomIcon("Tag");
+              setCustomNombre(planAEditar.categoria);
+            }
           }
           setCategoria(planAEditar.categoria);
         } else {
           setIsCustomCategoria(false);
           setCategoria("comida");
-          setCustomEmoji("🏷️");
+          setSelectedCustomIcon("Tag");
           setCustomNombre("");
         }
 
@@ -260,7 +385,7 @@ export default function PlanModal({
         setTitulo("");
         setCategoria("comida");
         setIsCustomCategoria(false);
-        setCustomEmoji("🏷️");
+        setSelectedCustomIcon("Tag");
         setCustomNombre("");
         setUbicacion("");
         setLinkMaps("");
@@ -282,7 +407,7 @@ export default function PlanModal({
     setTitulo("");
     setCategoria("comida");
     setIsCustomCategoria(false);
-    setCustomEmoji("🏷️");
+    setSelectedCustomIcon("Tag");
     setCustomNombre("");
     setUbicacion("");
     setLinkMaps("");
@@ -312,9 +437,8 @@ export default function PlanModal({
       if (isCustomCategoria) {
         const nombreTrimmed = customNombre.trim();
         if (nombreTrimmed) {
-          finalCategoria = customEmoji.trim()
-            ? `${customEmoji.trim()} ${nombreTrimmed}`
-            : nombreTrimmed;
+          const iconName = selectedCustomIcon || "Tag";
+          finalCategoria = `${iconName} ${nombreTrimmed}`;
         } else {
           finalCategoria = "comida";
         }
@@ -388,14 +512,27 @@ export default function PlanModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="rounded-t-3xl sm:rounded-2xl p-5 w-full max-w-md bg-white shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="rounded-t-3xl sm:rounded-2xl p-5 w-full max-w-md bg-surface shadow-xl max-h-[90vh] overflow-y-auto border border-borderSubtle/60">
         {/* Cabecera del modal */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="flex items-center justify-between pb-3 border-b border-borderSubtle">
           <div>
-            <h2 className="text-base font-bold text-slate-800">
-              {isEditing ? "✏️ Editar Plan" : "💡 Nueva Idea / Plan"}
+            <h2 className="text-base font-bold text-content-main flex items-center gap-1.5">
+              {isEditing ? (
+                <>
+                  <Pencil className="w-4 h-4 text-brand" strokeWidth={1.75} />
+                  <span>Editar Plan</span>
+                </>
+              ) : (
+                <>
+                  <Lightbulb
+                    className="w-4 h-4 text-brand"
+                    strokeWidth={1.75}
+                  />
+                  <span>Nueva Idea / Plan</span>
+                </>
+              )}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-content-muted">
               {isEditing
                 ? "Modifica los detalles del plan"
                 : "Agrégalo a la bolsa o asígnalo directo"}
@@ -405,7 +542,7 @@ export default function PlanModal({
             type="button"
             onClick={handleClose}
             aria-label="Cerrar modal"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-content-muted hover:text-content-main hover:bg-app transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -417,7 +554,7 @@ export default function PlanModal({
           <div className="flex flex-col gap-1">
             <label
               htmlFor="plan-titulo"
-              className="text-xs font-semibold text-slate-700"
+              className="text-xs font-semibold text-content-main"
             >
               Título <span className="text-rose-500">*</span>
             </label>
@@ -428,18 +565,19 @@ export default function PlanModal({
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               placeholder="Ej. Café Tortoni o Museo"
-              className="h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
+              className="h-11 px-3.5 rounded-xl border border-borderSubtle bg-app text-content-main text-sm placeholder:text-content-muted focus:bg-surface focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all"
             />
           </div>
 
           {/* Selector de categoría (por defecto + opción personalizada) */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-700">
+            <label className="text-xs font-semibold text-content-main">
               Categoría
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {listaCategorias.map((cat) => {
                 const isSelected = !isCustomCategoria && categoria === cat.id;
+                const CatIcon = cat.icon;
                 return (
                   <button
                     key={cat.id}
@@ -450,11 +588,14 @@ export default function PlanModal({
                     }}
                     className={`h-11 px-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all truncate ${
                       isSelected
-                        ? "bg-slate-900 border-slate-900 text-white shadow-sm"
-                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                        ? "bg-brand border-brand text-white shadow-xs"
+                        : "bg-app border-borderSubtle text-content-main hover:bg-borderSubtle/60 active:bg-borderSubtle"
                     }`}
                   >
-                    <span>{cat.emoji}</span>
+                    <CatIcon
+                      className="w-3.5 h-3.5 shrink-0"
+                      strokeWidth={1.75}
+                    />
                     <span className="truncate">{cat.label}</span>
                   </button>
                 );
@@ -465,67 +606,68 @@ export default function PlanModal({
                 onClick={() => setIsCustomCategoria(true)}
                 className={`h-11 px-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all col-span-2 sm:col-span-1 ${
                   isCustomCategoria
-                    ? "bg-slate-900 border-slate-900 text-white shadow-sm"
-                    : "bg-slate-50 border-dashed border-slate-300 text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                    ? "bg-brand border-brand text-white shadow-xs"
+                    : "bg-app border-dashed border-borderSubtle text-content-main hover:bg-borderSubtle/60 active:bg-borderSubtle"
                 }`}
               >
-                <span>➕</span>
+                <Plus className="w-4 h-4 shrink-0" strokeWidth={1.75} />
                 <span>Otra / Nueva</span>
               </button>
             </div>
 
-            {/* Inputs para categoría personalizada con emoji */}
+            {/* Inputs para categoría personalizada con selector de icono Lucide */}
             {isCustomCategoria && (
-              <div className="mt-1 p-3 rounded-2xl border border-slate-200 bg-slate-50/80 flex flex-col gap-2">
-                <span className="text-[11px] font-semibold text-slate-600">
-                  Elige emoji y nombre de la categoría:
-                </span>
-                <div className="flex items-center gap-2">
+              <div className="mt-1 p-3 rounded-2xl border border-borderSubtle bg-app/80 flex flex-col gap-2.5">
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="custom-categoria-nombre"
+                    className="text-[11px] font-semibold text-content-muted"
+                  >
+                    Nombre de la nueva categoría:
+                  </label>
                   <input
-                    type="text"
-                    value={customEmoji}
-                    onChange={(e) => setCustomEmoji(e.target.value)}
-                    placeholder="🏷️"
-                    title="Emoji de la categoría"
-                    className="w-12 h-11 text-center text-lg rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
-                  />
-                  <input
+                    id="custom-categoria-nombre"
                     type="text"
                     required={isCustomCategoria}
                     value={customNombre}
                     onChange={(e) => setCustomNombre(e.target.value)}
-                    placeholder="Ej: Cafés, Alojamiento, Bar..."
-                    className="flex-1 h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder:text-slate-400 focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
+                    placeholder="Ej: Cafeterías, Bares, Fotografía..."
+                    className="w-full h-11 px-3.5 rounded-xl border border-borderSubtle bg-surface text-content-main text-sm placeholder:text-content-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all"
                   />
                 </div>
-                {/* Sugerencias de emojis rápidos */}
-                <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar text-base">
-                  <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                    Sugerencias:
+
+                {/* Hilera de botones compactos con iconos de Lucide seleccionables */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-semibold text-content-muted">
+                    Ícono:
                   </span>
-                  {[
-                    "☕",
-                    "🏨",
-                    "🚇",
-                    "🏖️",
-                    "🍺",
-                    "🎨",
-                    "🛍️",
-                    "✈️",
-                    "🎵",
-                    "📸",
-                    "🎭",
-                    "🍕",
-                  ].map((em) => (
-                    <button
-                      key={em}
-                      type="button"
-                      onClick={() => setCustomEmoji(em)}
-                      className="h-7 w-7 shrink-0 rounded-lg hover:bg-white hover:shadow-xs active:scale-95 transition-all flex items-center justify-center text-sm"
-                    >
-                      {em}
-                    </button>
-                  ))}
+                  <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {ICONOS_SELECCIONABLES.map(
+                      ({ id, label: iconLabel, icon: IconComp }) => {
+                        const isIconSelected =
+                          (selectedCustomIcon || "Tag") === id;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setSelectedCustomIcon(id)}
+                            title={iconLabel}
+                            aria-label={iconLabel}
+                            className={`h-9 w-9 shrink-0 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                              isIconSelected
+                                ? "bg-brand border-brand text-white shadow-xs"
+                                : "bg-surface border-borderSubtle text-content-muted hover:text-content-main hover:bg-app"
+                            }`}
+                          >
+                            <IconComp
+                              className="w-4 h-4 shrink-0"
+                              strokeWidth={1.75}
+                            />
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -535,7 +677,7 @@ export default function PlanModal({
           <div className="flex flex-col gap-1">
             <label
               htmlFor="plan-ubicacion"
-              className="text-xs font-semibold text-slate-700"
+              className="text-xs font-semibold text-content-main"
             >
               Ubicación
             </label>
@@ -545,7 +687,7 @@ export default function PlanModal({
               value={ubicacion}
               onChange={(e) => setUbicacion(e.target.value)}
               placeholder="Barrio o referencia, ej. Palermo"
-              className="h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
+              className="h-11 px-3.5 rounded-xl border border-borderSubtle bg-app text-content-main text-sm placeholder:text-content-muted focus:bg-surface focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all"
             />
           </div>
 
@@ -553,7 +695,7 @@ export default function PlanModal({
           <div className="flex flex-col gap-1">
             <label
               htmlFor="plan-link-maps"
-              className="text-xs font-semibold text-slate-700"
+              className="text-xs font-semibold text-content-main"
             >
               Link de Maps (opcional)
             </label>
@@ -563,7 +705,7 @@ export default function PlanModal({
               value={linkMaps}
               onChange={(e) => setLinkMaps(e.target.value)}
               placeholder="Link de Google Maps"
-              className="h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
+              className="h-11 px-3.5 rounded-xl border border-borderSubtle bg-app text-content-main text-sm placeholder:text-content-muted focus:bg-surface focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all"
             />
           </div>
 
@@ -571,7 +713,7 @@ export default function PlanModal({
           <div className="flex flex-col gap-1">
             <label
               htmlFor="plan-descripcion"
-              className="text-xs font-semibold text-slate-700"
+              className="text-xs font-semibold text-content-main"
             >
               Descripción / Tips
             </label>
@@ -581,35 +723,35 @@ export default function PlanModal({
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="¿Por qué ir o qué pedir?"
-              className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm placeholder:text-slate-400 focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all resize-none"
+              className="p-3 rounded-xl border border-borderSubtle bg-app text-content-main text-sm placeholder:text-content-muted focus:bg-surface focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all resize-none"
             />
           </div>
 
           {/* Sección / Toggle opcional: Asignar directamente al Itinerario */}
           <div className="pt-1 flex flex-col gap-3">
-            <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/80 transition-colors">
+            <label className="flex items-center gap-2.5 p-3 rounded-xl border border-borderSubtle bg-app cursor-pointer hover:bg-borderSubtle/50 transition-colors">
               <input
                 type="checkbox"
                 checked={asignarDirecto}
                 onChange={(e) => setAsignarDirecto(e.target.checked)}
-                className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 border-slate-300"
+                className="w-4 h-4 rounded text-brand focus:ring-brand border-borderSubtle"
               />
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 select-none">
-                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-content-main select-none">
+                <Calendar className="w-3.5 h-3.5 text-brand" />
                 <span>Asignar directamente al Itinerario</span>
               </div>
             </label>
 
             {/* Campos condicionales al activar itinerario */}
             {asignarDirecto && (
-              <div className="p-3.5 rounded-2xl border border-blue-100 bg-blue-50/40 flex flex-col gap-3 transition-all animate-fadeIn">
+              <div className="p-3.5 rounded-2xl border border-brand/20 bg-brand-light/50 flex flex-col gap-3 transition-all animate-fadeIn">
                 {/* Fecha */}
                 <div className="flex flex-col gap-1">
                   <label
                     htmlFor="itinerario-fecha"
-                    className="text-xs font-semibold text-slate-700 flex items-center gap-1"
+                    className="text-xs font-semibold text-content-main flex items-center gap-1"
                   >
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <Calendar className="w-3.5 h-3.5 text-content-muted" />
                     <span>Fecha del Plan</span>
                   </label>
                   <input
@@ -618,30 +760,34 @@ export default function PlanModal({
                     required={asignarDirecto}
                     value={fecha}
                     onChange={(e) => setFecha(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
+                    className="w-full p-2.5 rounded-xl border border-borderSubtle bg-surface text-content-main text-sm font-medium focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all"
                   />
                 </div>
 
                 {/* Bloque horario */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label className="text-xs font-semibold text-content-main">
                     Momento del Día
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                     {BLOQUES.map((b) => {
                       const isSelected = bloque === b.id;
+                      const BloqueIcon = b.icon;
                       return (
                         <button
                           key={b.id}
                           type="button"
                           onClick={() => setBloque(b.id)}
-                          className={`h-9 px-2 rounded-xl border text-xs font-medium flex items-center justify-center gap-1 transition-all ${
+                          className={`h-9 px-2 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
                             isSelected
-                              ? "bg-slate-900 border-slate-900 text-white shadow-sm"
-                              : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                              ? "bg-brand border-brand text-white shadow-xs"
+                              : "bg-surface border-borderSubtle text-content-main hover:bg-app"
                           }`}
                         >
-                          <span>{b.icon}</span>
+                          <BloqueIcon
+                            className="w-3.5 h-3.5 shrink-0"
+                            strokeWidth={1.75}
+                          />
                           <span>{b.label}</span>
                         </button>
                       );
@@ -652,8 +798,8 @@ export default function PlanModal({
                 {/* Selector de Horario */}
                 {bloque === "todo_el_dia" ? (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <label className="text-xs font-semibold text-content-main flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-content-muted" />
                       <span>Rango de horario (opcional)</span>
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -661,7 +807,7 @@ export default function PlanModal({
                       <div className="flex flex-col gap-1">
                         <label
                           htmlFor="itinerario-hora-inicio"
-                          className="text-[11px] font-medium text-slate-500"
+                          className="text-[11px] font-medium text-content-muted"
                         >
                           Hora inicio (opcional)
                         </label>
@@ -670,7 +816,7 @@ export default function PlanModal({
                             id="itinerario-hora-inicio"
                             value={horaInicio}
                             onChange={(e) => setHoraInicio(e.target.value)}
-                            className="w-full p-2.5 pr-8 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+                            className="w-full p-2.5 pr-8 rounded-xl border border-borderSubtle bg-surface text-content-main text-xs font-medium focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all cursor-pointer appearance-none"
                           >
                             {HORAS_RANGO.map((opt) => (
                               <option
@@ -689,7 +835,7 @@ export default function PlanModal({
                                 </option>
                               )}
                           </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-content-muted">
                             <Clock className="w-3.5 h-3.5" />
                           </div>
                         </div>
@@ -699,7 +845,7 @@ export default function PlanModal({
                       <div className="flex flex-col gap-1">
                         <label
                           htmlFor="itinerario-hora-fin"
-                          className="text-[11px] font-medium text-slate-500"
+                          className="text-[11px] font-medium text-content-muted"
                         >
                           Hora fin (opcional)
                         </label>
@@ -708,7 +854,7 @@ export default function PlanModal({
                             id="itinerario-hora-fin"
                             value={horaFin}
                             onChange={(e) => setHoraFin(e.target.value)}
-                            className="w-full p-2.5 pr-8 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+                            className="w-full p-2.5 pr-8 rounded-xl border border-borderSubtle bg-surface text-content-main text-xs font-medium focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all cursor-pointer appearance-none"
                           >
                             {HORAS_RANGO.map((opt) => (
                               <option
@@ -725,7 +871,7 @@ export default function PlanModal({
                                 <option value={horaFin}>{horaFin} hs</option>
                               )}
                           </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-content-muted">
                             <Clock className="w-3.5 h-3.5" />
                           </div>
                         </div>
@@ -736,9 +882,9 @@ export default function PlanModal({
                   <div className="flex flex-col gap-1">
                     <label
                       htmlFor="itinerario-horario"
-                      className="text-xs font-semibold text-slate-700 flex items-center gap-1"
+                      className="text-xs font-semibold text-content-main flex items-center gap-1"
                     >
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <Clock className="w-3.5 h-3.5 text-content-muted" />
                       <span>Horario específico</span>
                     </label>
                     <div className="relative">
@@ -746,7 +892,7 @@ export default function PlanModal({
                         id="itinerario-horario"
                         value={horario}
                         onChange={(e) => setHorario(e.target.value)}
-                        className="w-full p-2.5 pr-9 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+                        className="w-full p-2.5 pr-9 rounded-xl border border-borderSubtle bg-surface text-content-main text-sm font-medium focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all cursor-pointer appearance-none"
                       >
                         {HORAS_DISPONIBLES.map((opt) => (
                           <option key={opt.value} value={opt.value}>
@@ -757,7 +903,7 @@ export default function PlanModal({
                           <option value={horario}>{horario}</option>
                         )}
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-content-muted">
                         <Clock className="w-4 h-4" />
                       </div>
                     </div>
@@ -771,7 +917,7 @@ export default function PlanModal({
           <button
             type="submit"
             disabled={!titulo.trim() || isSubmitting}
-            className="h-12 w-full mt-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm text-sm"
+            className="h-12 w-full mt-2 bg-brand hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs text-sm"
           >
             {isSubmitting ? (
               <>

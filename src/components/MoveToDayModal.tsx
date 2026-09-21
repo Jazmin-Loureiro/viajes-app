@@ -2,7 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { BloqueHorario, PlanViaje } from "@/lib/supabase";
-import { X, Calendar, Clock, Loader2 } from "lucide-react";
+import {
+  X,
+  Calendar,
+  Clock,
+  Loader2,
+  Sunrise,
+  Sun,
+  Sunset,
+  Wine,
+  Moon,
+  SunMedium,
+} from "lucide-react";
 
 export interface MoveToDayModalProps {
   isOpen: boolean;
@@ -16,13 +27,19 @@ export interface MoveToDayModalProps {
   ) => Promise<void> | void;
 }
 
-const BLOQUES: { id: BloqueHorario; label: string; icon: string }[] = [
-  { id: "todo_el_dia", label: "Todo el día", icon: "☀️" },
-  { id: "mañana", label: "Mañana", icon: "☀️" },
-  { id: "mediodia", label: "Mediodía", icon: "🍽️" },
-  { id: "tarde", label: "Tarde", icon: "🌤️" },
-  { id: "cena", label: "Cena", icon: "🍷" },
-  { id: "noche", label: "Noche", icon: "🌙" },
+interface BloqueModalConfig {
+  id: BloqueHorario;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+}
+
+const BLOQUES: BloqueModalConfig[] = [
+  { id: "todo_el_dia", label: "Todo el día", icon: SunMedium },
+  { id: "mañana", label: "Mañana", icon: Sunrise },
+  { id: "mediodia", label: "Mediodía", icon: Sun },
+  { id: "tarde", label: "Tarde", icon: Sunset },
+  { id: "cena", label: "Cena", icon: Wine },
+  { id: "noche", label: "Noche", icon: Moon },
 ];
 
 const HORAS_DISPONIBLES: { value: string; label: string }[] = (() => {
@@ -109,15 +126,15 @@ export default function MoveToDayModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="rounded-t-3xl sm:rounded-2xl p-5 w-full max-w-md bg-white shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="rounded-t-3xl sm:rounded-2xl p-5 w-full max-w-md bg-surface shadow-xl max-h-[90vh] overflow-y-auto border border-borderSubtle/60">
         {/* Cabecera del modal */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="flex items-center justify-between pb-3 border-b border-borderSubtle">
           <div className="pr-2">
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-blue-600" />
+            <h2 className="text-base font-bold text-content-main flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-brand" />
               <span>Asignar al Itinerario</span>
             </h2>
-            <p className="text-xs text-slate-500 font-medium truncate max-w-[280px] mt-0.5">
+            <p className="text-xs text-content-muted font-medium truncate max-w-[280px] mt-0.5">
               {plan.titulo}
             </p>
           </div>
@@ -125,7 +142,7 @@ export default function MoveToDayModal({
             type="button"
             onClick={handleClose}
             aria-label="Cerrar modal"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-content-muted hover:text-content-main hover:bg-app transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -137,9 +154,9 @@ export default function MoveToDayModal({
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="plan-fecha"
-              className="text-xs font-semibold text-slate-700 flex items-center gap-1"
+              className="text-xs font-semibold text-content-main flex items-center gap-1"
             >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <Calendar className="w-3.5 h-3.5 text-content-muted" />
               <span>Fecha del Plan</span>
               <span className="text-rose-500">*</span>
             </label>
@@ -149,18 +166,19 @@ export default function MoveToDayModal({
               required
               value={fecha}
               onChange={(e) => setFecha(e.target.value)}
-              className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
+              className="w-full p-3 rounded-xl border border-borderSubtle bg-app text-content-main text-sm font-medium focus:bg-surface focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all"
             />
           </div>
 
           {/* Selector de Bloque Horario */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+            <label className="text-xs font-semibold text-content-main flex items-center gap-1">
               <span>Momento del Día</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {BLOQUES.map((b) => {
                 const isSelected = bloque === b.id;
+                const BloqueIcon = b.icon;
                 return (
                   <button
                     key={b.id}
@@ -168,11 +186,14 @@ export default function MoveToDayModal({
                     onClick={() => setBloque(b.id)}
                     className={`h-11 px-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all ${
                       isSelected
-                        ? "bg-slate-900 border-slate-900 text-white shadow-sm"
-                        : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                        ? "bg-brand border-brand text-white shadow-xs"
+                        : "bg-app border-borderSubtle text-content-main hover:bg-borderSubtle/60 active:bg-borderSubtle"
                     }`}
                   >
-                    <span>{b.icon}</span>
+                    <BloqueIcon
+                      className="w-4 h-4 shrink-0"
+                      strokeWidth={1.75}
+                    />
                     <span>{b.label}</span>
                   </button>
                 );
@@ -184,9 +205,9 @@ export default function MoveToDayModal({
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="plan-horario"
-              className="text-xs font-semibold text-slate-700 flex items-center gap-1"
+              className="text-xs font-semibold text-content-main flex items-center gap-1"
             >
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <Clock className="w-3.5 h-3.5 text-content-muted" />
               <span>Horario específico</span>
             </label>
             <div className="relative">
@@ -194,7 +215,7 @@ export default function MoveToDayModal({
                 id="plan-horario"
                 value={horario}
                 onChange={(e) => setHorario(e.target.value)}
-                className="w-full p-3 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:bg-white focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all cursor-pointer appearance-none"
+                className="w-full p-3 pr-10 rounded-xl border border-borderSubtle bg-app text-content-main text-sm font-medium focus:bg-surface focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand transition-all cursor-pointer appearance-none"
               >
                 {HORAS_DISPONIBLES.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -203,7 +224,7 @@ export default function MoveToDayModal({
                 ))}
                 {hasCustomHorario && <option value={horario}>{horario}</option>}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-content-muted">
                 <Clock className="w-4 h-4" />
               </div>
             </div>
@@ -213,7 +234,7 @@ export default function MoveToDayModal({
           <button
             type="submit"
             disabled={!fecha || isSubmitting}
-            className="h-12 w-full mt-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm text-sm"
+            className="h-12 w-full mt-2 bg-brand hover:bg-brand-hover active:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs text-sm"
           >
             {isSubmitting ? (
               <>
